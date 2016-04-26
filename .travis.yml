@@ -6,6 +6,6 @@ go:
 env:
   - "PATH=/home/travis/gopath/bin:$PATH"
 
-install: make install-deps
+install: make install-deps-linux
 
 script: make test
