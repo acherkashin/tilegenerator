@@ -17,8 +17,10 @@ func main() {
 }
 
 func GetTile(writer http.ResponseWriter, req *http.Request) {
-	point, _ := geos.FromWKT("POINT(0 0)")
-	geometries := []geos.Geometry{*point}
+	point, _ := geos.FromWKT("POINT (0 0)")
+	line, _ := geos.FromWKT("LINESTRING (0 0, 20 10, 10 10, 20 20)")
+	poly, _ := geos.FromWKT("POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))")
+	geometries := []geos.Geometry{*point, *line, *poly}
 	vars := mux.Vars(req)
 	x, errX := strconv.Atoi(vars["x"])
 	y, errY := strconv.Atoi(vars["y"])

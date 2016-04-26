@@ -16,7 +16,43 @@ func renderPoint(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile
 		return false
 	}
 	x, y := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
-	canvas.Circle(x, y, 10, "fill: black;")
+	canvas.Circle(x, y, 5, "fill: black;")
+	return true
+}
+
+func renderPolyline(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile) bool {
+	coords, err := geometry.Coords()
+	if (err != nil) {
+		return false;
+	}
+	xs := []int{}
+	ys := []int{}
+	for _, coord := range coords {
+		x, y := tile.Degrees2Pixels(coord.Y, coord.X)
+		xs = append(xs, x)
+		ys = append(ys, y)
+	}
+	canvas.Polyline(xs, ys, "stroke: black; fill: none;")
+	return true
+}
+
+func renderPolygon(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile) bool {
+	boundary, err := geometry.Boundary()
+	if (err != nil) {
+		return false;
+	}
+	coords, err := boundary.Coords()
+	if (err != nil) {
+		return false;
+	}
+	xs := []int{}
+	ys := []int{}
+	for _, coord := range coords {
+		x, y := tile.Degrees2Pixels(coord.Y, coord.X)
+		xs = append(xs, x)
+		ys = append(ys, y)
+	}
+	canvas.Polygon(xs, ys, "stroke: black; fill: rgba(100, 100, 100, .5);")
 	return true
 }
 
@@ -28,6 +64,10 @@ func renderGeometry(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.T
 	switch  geometryType{
 	case geos.POINT:
 		renderPoint(canvas, geometry, tile)
+	case geos.LINESTRING:
+		renderPolyline(canvas, geometry, tile)
+	case geos.POLYGON:
+		renderPolygon(canvas, geometry, tile)
 	default:
 		return false
 	}
