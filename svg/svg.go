@@ -20,6 +20,18 @@ func renderPoint(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile
 	return true
 }
 
+func renderMultiPoint(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile) bool {
+	n, err := geometry.NGeometry()
+	if (err != nil) {
+		return false
+	}
+	for i := 0; i < n; i++ {
+		g, _ := geometry.Geometry(i)
+		renderPoint(canvas, g, tile)
+	}
+	return false;
+}
+
 func renderPolyline(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile) bool {
 	coords, err := geometry.Coords()
 	if (err != nil) {
@@ -34,6 +46,18 @@ func renderPolyline(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.T
 	}
 	canvas.Polyline(xs, ys, "stroke: black; fill: none;")
 	return true
+}
+
+func renderMultiPolyline(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile) bool {
+	n, err := geometry.NGeometry()
+	if (err != nil) {
+		return false
+	}
+	for i := 0; i < n; i++ {
+		g, _ := geometry.Geometry(i)
+		renderPolyline(canvas, g, tile)
+	}
+	return false;
 }
 
 func renderPolygon(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile) bool {
@@ -56,6 +80,18 @@ func renderPolygon(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Ti
 	return true
 }
 
+func renderMultiPolygon(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile) bool {
+	n, err := geometry.NGeometry()
+	if (err != nil) {
+		return false
+	}
+	for i := 0; i < n; i++ {
+		g, _ := geometry.Geometry(i)
+		renderPolygon(canvas, g, tile)
+	}
+	return false;
+}
+
 func renderGeometry(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile) bool {
 	geometryType, err := geometry.Type()
 	if (err != nil) {
@@ -64,10 +100,16 @@ func renderGeometry(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.T
 	switch  geometryType{
 	case geos.POINT:
 		renderPoint(canvas, geometry, tile)
+	case geos.MULTIPOINT:
+		renderMultiPoint(canvas, geometry, tile)
 	case geos.LINESTRING:
 		renderPolyline(canvas, geometry, tile)
+	case geos.MULTILINESTRING:
+		renderMultiPolyline(canvas, geometry, tile)
 	case geos.POLYGON:
 		renderPolygon(canvas, geometry, tile)
+	case geos.MULTIPOLYGON:
+		renderMultiPolygon(canvas, geometry, tile)
 	default:
 		return false
 	}
