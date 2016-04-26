@@ -8,6 +8,7 @@ env:
 
 before_install:
   - sudo apt-get install libgeos-dev
+  - go get github.com/stretchr/testify/assert
   - go get ./...
 
 script: make test
