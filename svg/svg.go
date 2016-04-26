@@ -16,7 +16,7 @@ func renderPoint(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.Tile
 		return false
 	}
 	x, y := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
-	canvas.Circle(x, y, 10, "fill: black")
+	canvas.Circle(x, y, 10, "fill: black;")
 	return true
 }
 
@@ -34,10 +34,11 @@ func renderGeometry(canvas *svg.SVG, geometry *geos.Geometry, tile *mapobjects.T
 	return true;
 }
 
-func RenderTile(tile *mapobjects.Tile, geometries *[]geos.Geometry, writer *io.Writer) {
-	canvas := svg.New(*writer)
+func RenderTile(tile *mapobjects.Tile, geometries *[]geos.Geometry, writer io.Writer) {
+	canvas := svg.New(writer)
 	canvas.Start(mapobjects.TILE_SIZE, mapobjects.TILE_SIZE)
-	for _, geo := range geometries {
-		renderGeometry(canvas, geo, tile)
+	for _, geo := range *geometries {
+		renderGeometry(canvas, &geo, tile)
 	}
+	canvas.End()
 }
