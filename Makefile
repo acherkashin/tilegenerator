@@ -9,5 +9,5 @@ install-deps-mac:
 	go get ./...
 
 install-deps-linux:
-	apt-get install libgeos-dev
+	sudo apt-get install libgeos-dev
 	go get ./...
