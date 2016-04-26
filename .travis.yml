@@ -3,6 +3,9 @@ go:
  - 1.6.2
  - tip
 
+env:
+  - "PATH=/home/travis/gopath/bin:$PATH"
+
 install: make install-deps
 
 script: make test
