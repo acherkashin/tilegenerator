@@ -25,9 +25,15 @@ func TestNum2degConversion(t *testing.T) {
 
 func TestNewTile(t *testing.T) {
 	tile := NewTile(0, 0, 0)
-
 	assert.Equal(t, tile.BoundingBox.North, 85.05112877980659)
 	assert.Equal(t, tile.BoundingBox.South, -85.05112877980659)
 	assert.Equal(t, tile.BoundingBox.East, 180.0)
 	assert.Equal(t, tile.BoundingBox.West, -180.0)
+
+	tile = NewTile(2475, 1280, 12)
+	assert.Equal(t, tile.BoundingBox.North, 55.77657301866768)
+	assert.Equal(t, tile.BoundingBox.South, 55.727110085045986)
+	assert.Equal(t, tile.BoundingBox.East, 37.6171875)
+	assert.Equal(t, tile.BoundingBox.West, 37.529296875)
+
 }

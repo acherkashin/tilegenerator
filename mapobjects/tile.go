@@ -3,16 +3,27 @@ package mapobjects
 import (
 	"math"
 )
+/*
+ Size of each tile in pixels
+ */
+const TILE_SIZE = 256;
 
+/*
+ Contains tile properties
+
+ Z,X,Y - tile coordinates according to OSM specs(see http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames)
+ Bounding box - geographical coordinates of each side of tile
+ */
 type Tile struct {
-	Z           int
-	X           int
-	Y           int
+	Z, X, Y     int
 	Lat         float64
 	Lon         float64
 	BoundingBox BoundingBox
 }
 
+/*
+ Contains the most north/south/east/west coordinates of tile.
+ */
 type BoundingBox struct {
 	North float64
 	East  float64
@@ -20,10 +31,16 @@ type BoundingBox struct {
 	West  float64
 }
 
+/*
+ Returns longitude of the tile top side
+ */
 func Tile2lon(x int, z int) float64 {
 	return float64(x) / math.Pow(2.0, float64(z)) * 360.0 - 180.0;
 }
 
+/*
+ Returns latitude of the tile left side
+ */
 func Tile2lat(y int, z int) float64 {
 	n := math.Pi - (2.0 * math.Pi * float64(y)) / math.Pow(2.0, float64(z));
 	return math.Atan(math.Sinh(float64(n))) * 180 / math.Pi;
@@ -46,15 +63,16 @@ func (*Tile) Num2deg(t *Tile) (lat float64, lon float64) {
 	return lat, lon
 }
 
-func NewTile(x int, y int, z int) *Tile {
-	tile := new(Tile)
-	tile.X = x
-	tile.Y = y
-	tile.Z = z
-	tile.BoundingBox = BoundingBox{}
-	tile.BoundingBox.North = Tile2lat(y, z)
-	tile.BoundingBox.South = Tile2lat(y + 1, z)
-	tile.BoundingBox.West = Tile2lon(x, z)
-	tile.BoundingBox.East = Tile2lon(x + 1, z)
-	return tile
+/*
+ Tile factory function
+ */
+func NewTile(x int, y int, z int) Tile {
+	return Tile{
+		X: x, Y: y, Z:z,
+		BoundingBox: BoundingBox{
+			North : Tile2lat(y, z),
+			South : Tile2lat(y + 1, z),
+			West : Tile2lon(x, z),
+			East : Tile2lon(x + 1, z),
+		}}
 }
