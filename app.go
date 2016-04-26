@@ -3,20 +3,19 @@ package main
 import (
 	"fmt"
 	"log"
-	"github.com/terrafactory/tilegenerator/geo"
+	"github.com/paulsmith/gogeos/geos"
 )
 
 func main() {
-	geom := geo.BaseGeometry{}
-	line, err := geom.FromWKT("LINESTRING (0 0, 10 10, 20 20)")
+	line, err := geos.FromWKT("POINT (10 10)")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	buf, err := line.Buffer(2.5)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//buf, err := line.Buffer(2.5)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 
-	fmt.Println(buf)
+	fmt.Println(line.Coords())
 }
