@@ -35,6 +35,6 @@ func TestTile_Degrees2Pixels(t *testing.T) {
 
 	tile = NewTile(1, 0, 1)
 	x, y = tile.Degrees2Pixels(0, 0)
-	assert.Equal(t, 0.0, x, "point with (0,0) coords should be exactly in the center of whole world tile")
+	assert.Equal(t, 0, x, "point with (0,0) coords should be exactly in the center of whole world tile")
 	assert.Equal(t, TILE_SIZE, y, "point with (0,0) coords should be exactly in the center of whole world tile")
 }

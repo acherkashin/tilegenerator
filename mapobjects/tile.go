@@ -4,7 +4,7 @@ import (
 	"math"
 )
 /* Size of each tile in pixels */
-const TILE_SIZE = 256.0;
+const TILE_SIZE = 256;
 
 // region BoundingBox
 /*
@@ -74,14 +74,14 @@ func NewTile(x int, y int, z int) *Tile {
 
  May return negative values as well as values outside of tile
  */
-func (tile *Tile) Degrees2Pixels(lat, lon float64) (x float64, y float64) {
+func (tile *Tile) Degrees2Pixels(lat, lon float64) (x int, y int) {
 	northToSouthResolution := math.Abs(tile.BoundingBox.North - tile.BoundingBox.South) / TILE_SIZE
 	eastToWestResolution := math.Abs(tile.BoundingBox.East - tile.BoundingBox.West) / TILE_SIZE
 
 	deltaLat := tile.BoundingBox.North - lat
 	deltaLon := lon - tile.BoundingBox.West
-	x = deltaLon / eastToWestResolution
-	y = deltaLat / northToSouthResolution
+	x = int(math.Floor((deltaLon / eastToWestResolution) + .5))
+	y = int(math.Floor((deltaLat / northToSouthResolution) + .5))
 	return x, y
 }
 
