@@ -8,7 +8,6 @@ env:
 
 before_install:
   - sudo apt-get install libgeos-dev
-
-install: go get ./...
+  - go get ./...
 
 script: make test
