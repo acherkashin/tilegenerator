@@ -6,6 +6,9 @@ go:
 env:
   - "PATH=/home/travis/gopath/bin:$PATH"
 
-install: make install-deps-linux
+before_install:
+  - sudo apt-get install libgeos-dev
+
+install: go get ./...
 
 script: make test
