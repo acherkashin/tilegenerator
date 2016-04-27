@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"github.com/terrafactory/tilegenerator/geo"
+	"log"
 )
 
 func main() {
