@@ -160,10 +160,10 @@ func renderMultiPolygonObject(canvas *svg.SVG, object *mapobjects.MapObject, til
 	return nil;
 }
 
-func renderObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) bool {
+func renderObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	geometryType, err := object.Geometry.Type()
 	if (err != nil) {
-		return false
+		return err
 	}
 	switch  geometryType{
 	case geos.POINT:
@@ -179,9 +179,9 @@ func renderObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobject
 	case geos.MULTIPOLYGON:
 		renderMultiPolygonObject(canvas, object, tile)
 	default:
-		return false
+		return nil
 	}
-	return true;
+	return nil;
 }
 
 func RenderTile(tile *mapobjects.Tile, objects *[]mapobjects.MapObject, writer io.Writer) {
