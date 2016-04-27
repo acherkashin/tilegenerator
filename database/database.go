@@ -3,8 +3,8 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"github.com/TerraFactory/tilegenerator/geo"
 	_ "github.com/lib/pq"
-	"github.com/terrafactory/tilegenerator/geo"
 )
 
 type GeometryDB struct {

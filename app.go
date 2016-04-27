@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/terrafactory/tilegenerator/geo"
+	"github.com/TerraFactory/tilegenerator/geo"
 	"log"
 )
 
