@@ -13,7 +13,7 @@ func renderPoint(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects
 		return false;
 	}
 	x, y := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
-	canvas.Circle(x, y, 5, "fill: black;")
+	canvas.Circle(x, y, 5, object.CSS)
 	return true
 }
 
@@ -30,7 +30,7 @@ func renderMultiPoint(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapob
 			return false;
 		}
 		x, y := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
-		canvas.Circle(x, y, 5, "fill: black;")
+		canvas.Circle(x, y, 5, object.CSS)
 
 	}
 	return false;
@@ -48,7 +48,7 @@ func renderPolyline(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobje
 		xs = append(xs, x)
 		ys = append(ys, y)
 	}
-	canvas.Polyline(xs, ys, "stroke: black; fill: none;")
+	canvas.Polyline(xs, ys, object.CSS)
 	return true
 }
 
@@ -70,7 +70,7 @@ func renderMultiPolyline(canvas *svg.SVG, object *mapobjects.MapObject, tile *ma
 			xs = append(xs, x)
 			ys = append(ys, y)
 		}
-		canvas.Polyline(xs, ys, "stroke: black; fill: none;")
+		canvas.Polyline(xs, ys, object.CSS)
 
 	}
 	return false;
@@ -92,7 +92,7 @@ func renderPolygon(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjec
 		xs = append(xs, x)
 		ys = append(ys, y)
 	}
-	canvas.Polygon(xs, ys, "stroke: black; fill: rgba(100, 100, 100, .5);")
+	canvas.Polygon(xs, ys, object.CSS)
 	return true
 }
 
@@ -118,7 +118,7 @@ func renderMultiPolygon(canvas *svg.SVG, object *mapobjects.MapObject, tile *map
 			xs = append(xs, x)
 			ys = append(ys, y)
 		}
-		canvas.Polygon(xs, ys, "stroke: black; fill: rgba(100, 100, 100, .5);")
+		canvas.Polygon(xs, ys, object.CSS)
 	}
 	return false;
 }
