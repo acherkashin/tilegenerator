@@ -2,44 +2,63 @@ package svg
 
 import (
 	"github.com/paulsmith/gogeos/geos"
-	"github.com/ajstarks/svgo"
+	"github.com/terrafactory/svgo"
 	"github.com/terrafactory/tilegenerator/mapobjects"
 	"io"
+	"regexp"
+	"log"
+	"strconv"
 )
 
-func renderPoint(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) bool {
+func prefixSelectors(css string, id int) string {
+	reg, err := regexp.Compile("(}?[a-z0-9_ -]{1,256}{)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return reg.ReplaceAllString(css, "#id" + strconv.Itoa(id) + " $0")
+}
+
+func renderPointObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	coords, err := object.Geometry.Coords()
 	if (err != nil) {
-		return false;
+		return err;
 	}
 	x, y := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
-	canvas.Circle(x, y, 5, object.CSS)
-	return true
+	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Circle(x, y, 5, "")
+	canvas.Gend()
+	return nil
 }
 
-func renderMultiPoint(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) bool {
+func renderMultiPointObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	n, err := object.Geometry.NGeometry()
 	if (err != nil) {
-		return false
+		return err
 	}
+	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.Id))
 	for i := 0; i < n; i++ {
-		g, _ := object.Geometry.Geometry(i)
-
+		g, err := object.Geometry.Geometry(i)
+		if (err != nil) {
+			return err;
+		}
 		coords, err := g.Coords()
 		if (err != nil) {
-			return false;
+			return err;
 		}
 		x, y := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
-		canvas.Circle(x, y, 5, object.CSS)
+		canvas.Circle(x, y, 5, "")
 
 	}
-	return false;
+	canvas.Gend()
+	return nil;
 }
 
-func renderPolyline(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) bool {
+func renderPolylineObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	coords, err := object.Geometry.Coords()
 	if (err != nil) {
-		return false;
+		return err;
 	}
 	xs := []int{}
 	ys := []int{}
@@ -48,20 +67,28 @@ func renderPolyline(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobje
 		xs = append(xs, x)
 		ys = append(ys, y)
 	}
-	canvas.Polyline(xs, ys, object.CSS)
-	return true
+	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Polyline(xs, ys, "")
+	canvas.Gend()
+	return nil
 }
 
-func renderMultiPolyline(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) bool {
+func renderMultiPolylineObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	n, err := object.Geometry.NGeometry()
 	if (err != nil) {
-		return false
+		return err
 	}
+	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.Id))
 	for i := 0; i < n; i++ {
-		g, _ := object.Geometry.Geometry(i)
+		g, err := object.Geometry.Geometry(i)
+		if (err != nil) {
+			return err;
+		}
 		coords, err := g.Coords()
 		if (err != nil) {
-			return false;
+			return err;
 		}
 		xs := []int{}
 		ys := []int{}
@@ -70,20 +97,21 @@ func renderMultiPolyline(canvas *svg.SVG, object *mapobjects.MapObject, tile *ma
 			xs = append(xs, x)
 			ys = append(ys, y)
 		}
-		canvas.Polyline(xs, ys, object.CSS)
+		canvas.Polyline(xs, ys, "")
 
 	}
-	return false;
+	canvas.Gend()
+	return nil;
 }
 
-func renderPolygon(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) bool {
+func renderPolygon(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	boundary, err := object.Geometry.Boundary()
 	if (err != nil) {
-		return false;
+		return err;
 	}
 	coords, err := boundary.Coords()
 	if (err != nil) {
-		return false;
+		return err;
 	}
 	xs := []int{}
 	ys := []int{}
@@ -92,24 +120,32 @@ func renderPolygon(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjec
 		xs = append(xs, x)
 		ys = append(ys, y)
 	}
-	canvas.Polygon(xs, ys, object.CSS)
-	return true
+	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Polygon(xs, ys, "")
+	canvas.Gend()
+	return nil
 }
 
-func renderMultiPolygon(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) bool {
+func renderMultiPolygonObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	n, err := object.Geometry.NGeometry()
 	if (err != nil) {
-		return false
+		return err
 	}
+	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.Id))
 	for i := 0; i < n; i++ {
-		g, _ := object.Geometry.Geometry(i)
+		g, err := object.Geometry.Geometry(i)
+		if (err != nil) {
+			return err;
+		}
 		boundary, err := g.Boundary()
 		if (err != nil) {
-			return false;
+			return err;
 		}
 		coords, err := boundary.Coords()
 		if (err != nil) {
-			return false;
+			return err;
 		}
 		xs := []int{}
 		ys := []int{}
@@ -118,9 +154,10 @@ func renderMultiPolygon(canvas *svg.SVG, object *mapobjects.MapObject, tile *map
 			xs = append(xs, x)
 			ys = append(ys, y)
 		}
-		canvas.Polygon(xs, ys, object.CSS)
+		canvas.Polygon(xs, ys, "")
 	}
-	return false;
+	canvas.Gend()
+	return nil;
 }
 
 func renderObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) bool {
@@ -130,17 +167,17 @@ func renderObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobject
 	}
 	switch  geometryType{
 	case geos.POINT:
-		renderPoint(canvas, object, tile)
+		renderPointObject(canvas, object, tile)
 	case geos.MULTIPOINT:
-		renderMultiPoint(canvas, object, tile)
+		renderMultiPointObject(canvas, object, tile)
 	case geos.LINESTRING:
-		renderPolyline(canvas, object, tile)
+		renderPolylineObject(canvas, object, tile)
 	case geos.MULTILINESTRING:
-		renderMultiPolyline(canvas, object, tile)
+		renderMultiPolylineObject(canvas, object, tile)
 	case geos.POLYGON:
 		renderPolygon(canvas, object, tile)
 	case geos.MULTIPOLYGON:
-		renderMultiPolygon(canvas, object, tile)
+		renderMultiPolygonObject(canvas, object, tile)
 	default:
 		return false
 	}
