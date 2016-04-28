@@ -23,8 +23,8 @@ func GetTile(writer http.ResponseWriter, req *http.Request) {
 		1,
 		"POINT (0 0)",
 		`circle {
-		   fill: red;
-		 }`)
+	   	fill: red;
+		}`)
 
 	multipoint, _ := mapobjects.NewObject(
 		2,
