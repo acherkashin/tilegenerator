@@ -4,7 +4,7 @@ import (
 	"math"
 )
 /* Size of each tile in pixels */
-const TILE_SIZE = 256.0;
+const TILE_SIZE = 256;
 
 // region BoundingBox
 /*
