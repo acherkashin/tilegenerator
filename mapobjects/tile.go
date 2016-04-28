@@ -4,7 +4,7 @@ import (
 	"math"
 )
 /* Size of each tile in pixels */
-const TILE_SIZE = 256.0;
+const TILE_SIZE = 256;
 
 // region BoundingBox
 /*
@@ -20,7 +20,7 @@ type BoundingBox struct {
 /*
  Takes point latitude and longitude and returns true if this point is inside of this BoundingBox.
  */
-func (bbox BoundingBox) Contains(lat, lon float64) bool {
+func (bbox *BoundingBox) Contains(lat, lon float64) bool {
 	return (bbox.North >= lat && bbox.South <= lat) && (bbox.West <= lon && bbox.East >= lon)
 }
 // endregion
@@ -58,8 +58,8 @@ func Tile2lat(y int, z int) float64 {
 /*
  Tile factory function
  */
-func NewTile(x int, y int, z int) Tile {
-	return Tile{
+func NewTile(x int, y int, z int) *Tile {
+	return &Tile{
 		X: x, Y: y, Z:z,
 		BoundingBox: BoundingBox{
 			North : Tile2lat(y, z),
@@ -74,21 +74,21 @@ func NewTile(x int, y int, z int) Tile {
 
  May return negative values as well as values outside of tile
  */
-func (tile Tile) Degrees2Pixels(lat, lon float64) (x float64, y float64) {
+func (tile *Tile) Degrees2Pixels(lat, lon float64) (x int, y int) {
 	northToSouthResolution := math.Abs(tile.BoundingBox.North - tile.BoundingBox.South) / TILE_SIZE
 	eastToWestResolution := math.Abs(tile.BoundingBox.East - tile.BoundingBox.West) / TILE_SIZE
 
 	deltaLat := tile.BoundingBox.North - lat
 	deltaLon := lon - tile.BoundingBox.West
-	x = deltaLon / eastToWestResolution
-	y = deltaLat / northToSouthResolution
+	x = int(math.Floor((deltaLon / eastToWestResolution) + .5))
+	y = int(math.Floor((deltaLat / northToSouthResolution) + .5))
 	return x, y
 }
 
 /*
  Takes point latitude and longitude and returns true if this point is present on this tile.
  */
-func (tile Tile) Contains(lat, lon float64) bool {
+func (tile *Tile) Contains(lat, lon float64) bool {
 	return tile.BoundingBox.Contains(lat, lon)
 }
 
