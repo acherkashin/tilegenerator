@@ -20,7 +20,7 @@ type BoundingBox struct {
 /*
  Takes point latitude and longitude and returns true if this point is inside of this BoundingBox.
  */
-func (bbox BoundingBox) Contains(lat, lon float64) bool {
+func (bbox *BoundingBox) Contains(lat, lon float64) bool {
 	return (bbox.North >= lat && bbox.South <= lat) && (bbox.West <= lon && bbox.East >= lon)
 }
 // endregion
@@ -58,8 +58,8 @@ func Tile2lat(y int, z int) float64 {
 /*
  Tile factory function
  */
-func NewTile(x int, y int, z int) Tile {
-	return Tile{
+func NewTile(x int, y int, z int) *Tile {
+	return &Tile{
 		X: x, Y: y, Z:z,
 		BoundingBox: BoundingBox{
 			North : Tile2lat(y, z),
@@ -92,7 +92,7 @@ func (tile *Tile) Degrees2Pixels(lat, lon float64) (x int, y int) {
 /*
  Takes point latitude and longitude and returns true if this point is present on this tile.
  */
-func (tile Tile) Contains(lat, lon float64) bool {
+func (tile *Tile) Contains(lat, lon float64) bool {
 	return tile.BoundingBox.Contains(lat, lon)
 }
 
