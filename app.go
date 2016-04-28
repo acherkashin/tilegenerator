@@ -1,13 +1,15 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
-	"net/http"
-	"github.com/TerraFactory/tilegenerator/svg"
+	"fmt"
+	"github.com/TerraFactory/tilegenerator/geo"
 	"github.com/TerraFactory/tilegenerator/mapobjects"
-	"strconv"
+	"github.com/TerraFactory/tilegenerator/svg"
+	"github.com/gorilla/mux"
 	"log"
+	"net/http"
 	"runtime"
+	"strconv"
 )
 
 func main() {
@@ -22,8 +24,8 @@ func GetTile(writer http.ResponseWriter, req *http.Request) {
 		1,
 		"POINT (0 0)",
 		`circle {
-		   fill: red;
-		 }`)
+	   	fill: red;
+		}`)
 
 	multipoint, _ := mapobjects.NewObject(
 		2,
@@ -70,7 +72,7 @@ func GetTile(writer http.ResponseWriter, req *http.Request) {
 	x, errX := strconv.Atoi(vars["x"])
 	y, errY := strconv.Atoi(vars["y"])
 	z, errZ := strconv.Atoi(vars["z"])
-	if (errX != nil || errY != nil || errZ != nil) {
+	if errX != nil || errY != nil || errZ != nil {
 		writer.WriteHeader(400)
 		return
 	}
