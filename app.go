@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
-	"net/http"
-	"github.com/TerraFactory/tilegenerator/svg"
-	"github.com/TerraFactory/tilegenerator/mapobjects"
-	"strconv"
 	"log"
+	"net/http"
 	"runtime"
+	"strconv"
+
+	"github.com/TerraFactory/tilegenerator/mapobjects"
+	"github.com/TerraFactory/tilegenerator/svg"
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -70,7 +71,7 @@ func GetTile(writer http.ResponseWriter, req *http.Request) {
 	x, errX := strconv.Atoi(vars["x"])
 	y, errY := strconv.Atoi(vars["y"])
 	z, errZ := strconv.Atoi(vars["z"])
-	if (errX != nil || errY != nil || errZ != nil) {
+	if errX != nil || errY != nil || errZ != nil {
 		writer.WriteHeader(400)
 		return
 	}

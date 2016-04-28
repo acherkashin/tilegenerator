@@ -10,8 +10,8 @@ type MapObject struct {
 
 func NewObject(id int, wkt, css string) (*MapObject, error) {
 	geometry, err := geos.FromWKT(wkt)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
-	return &MapObject{Id: id, Geometry: *geometry, CSS: css }, nil
+	return &MapObject{Id: id, Geometry: *geometry, CSS: css}, nil
 }
