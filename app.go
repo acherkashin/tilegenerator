@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gorilla/mux"
 	"net/http"
-	"github.com/terrafactory/tilegenerator/svg"
-	"github.com/terrafactory/tilegenerator/mapobjects"
+	"github.com/TerraFactory/tilegenerator/svg"
+	"github.com/TerraFactory/tilegenerator/mapobjects"
 	"strconv"
 	"log"
 	"runtime"
