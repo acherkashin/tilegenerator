@@ -69,20 +69,24 @@ func NewTile(x int, y int, z int) *Tile {
 		}}
 }
 
+func (tile *Tile) Lon2TileX(zoom int, lon_deg float64) int {
+	x := (lon_deg + 180.0) / 360.0 * (math.Exp2(float64(zoom)))
+	return int(math.Floor(TILE_SIZE * (x - float64(tile.X))))
+}
+
+func (tile *Tile) Lat2TileY(zoom int, lat_deg float64) int {
+	y := (1.0 - math.Log(math.Tan(lat_deg * math.Pi / 180.0) + 1.0 / math.Cos(lat_deg * math.Pi / 180.0)) / math.Pi) / 2.0 * (math.Exp2(float64(zoom)))
+	return int(math.Floor(TILE_SIZE * (y - float64(tile.Y))))
+}
+
+
 /*
  Takes point latitude and longitude and returns pixel coordinates of point on some tile.
 
  May return negative values as well as values outside of tile
  */
 func (tile *Tile) Degrees2Pixels(lat, lon float64) (x int, y int) {
-	northToSouthResolution := math.Abs(tile.BoundingBox.North - tile.BoundingBox.South) / TILE_SIZE
-	eastToWestResolution := math.Abs(tile.BoundingBox.East - tile.BoundingBox.West) / TILE_SIZE
-
-	deltaLat := tile.BoundingBox.North - lat
-	deltaLon := lon - tile.BoundingBox.West
-	x = int(math.Floor((deltaLon / eastToWestResolution) + .5))
-	y = int(math.Floor((deltaLat / northToSouthResolution) + .5))
-	return x, y
+	return tile.Lon2TileX(tile.Z, lon), tile.Lat2TileY(tile.Z, lat)
 }
 
 /*
