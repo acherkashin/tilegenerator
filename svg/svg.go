@@ -2,8 +2,8 @@ package svg
 
 import (
 	"github.com/paulsmith/gogeos/geos"
-	"github.com/terrafactory/svgo"
-	"github.com/terrafactory/tilegenerator/mapobjects"
+	"github.com/TerraFactory/svgo"
+	"github.com/TerraFactory/tilegenerator/mapobjects"
 	"io"
 	"regexp"
 	"log"
