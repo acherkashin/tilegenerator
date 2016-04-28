@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"github.com/TerraFactory/tilegenerator/geo"
 	"github.com/TerraFactory/tilegenerator/mapobjects"
 	"github.com/TerraFactory/tilegenerator/svg"
 	"github.com/gorilla/mux"
