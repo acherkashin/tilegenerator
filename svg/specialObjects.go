@@ -11,7 +11,7 @@ import (
 )
 
 type chartPoint struct {
-	X, Y, Z, Value float64
+	x, y, z, value float64
 }
 
 type beamDiagram struct {
@@ -76,10 +76,10 @@ func newPatrollingArea(tile *mapobjects.Tile, coords []geos.Coord) *patrollingAr
 
 func newCharPoint(x, y, z, value float64) *chartPoint {
 	var cp chartPoint
-	cp.X = x
-	cp.Y = y
-	cp.Z = z
-	cp.Value = value
+	cp.x = x
+	cp.y = y
+	cp.z = z
+	cp.value = value
 
 	return &cp
 }
@@ -128,8 +128,8 @@ func (beamDiagram *beamDiagram) getPoints(centerX, centerY int) (xs, ys []int) {
 	maxValue := getMax(tempPointList)
 
 	for _, point := range tempPointList {
-		xs = append(xs, centerX+int(point.Y*beamDiagram.radius/maxValue))
-		ys = append(ys, centerY+int(point.X*beamDiagram.radius/maxValue))
+		xs = append(xs, centerX+int(point.y*beamDiagram.radius/maxValue))
+		ys = append(ys, centerY+int(point.x*beamDiagram.radius/maxValue))
 	}
 
 	xs[0] = centerX + int(beamDiagram.radius)
@@ -253,8 +253,8 @@ func getMax(chartPoints []*chartPoint) float64 {
 	max := math.SmallestNonzeroFloat64
 
 	for _, point := range chartPoints {
-		if point.Value > max {
-			max = point.Value
+		if point.value > max {
+			max = point.value
 		}
 	}
 
