@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/TerraFactory/tilegenerator/geo"
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" //we want to use blank import here
 )
 
+// GeometryDB is a structure which represents a DB connection
 type GeometryDB struct {
 	conn      *sql.DB
 	geomtable string
@@ -21,7 +22,7 @@ func (gdb *GeometryDB) rowsToGeometries(rows *sql.Rows) []geo.BaseGeometry {
 	defer tmpRows.Close()
 
 	for tmpRows.Next() {
-		err := tmpRows.Scan(&geometry.Id, &geometry.Value)
+		err := tmpRows.Scan(&geometry.ID, &geometry.Value)
 		if err == nil {
 			geometries = append(geometries, geometry)
 		}
@@ -29,7 +30,7 @@ func (gdb *GeometryDB) rowsToGeometries(rows *sql.Rows) []geo.BaseGeometry {
 	return geometries
 }
 
-// Create db connection. Use "geotable" parameter as a table with geometries and
+// InitConnection creates db connection. Use "geotable" parameter as a table with geometries and
 // "geocol" as a geometry column
 func (gdb *GeometryDB) InitConnection(username string, connstring string, geomtable string, geomcol string) {
 	db, err := sql.Open(username, connstring)
@@ -43,15 +44,15 @@ func (gdb *GeometryDB) InitConnection(username string, connstring string, geomta
 	}
 }
 
-// Return slice of all geometries in a database
+// GetAllGeometries returns a slice of all geometries in a database
 func (gdb *GeometryDB) GetAllGeometries() (geometries []geo.BaseGeometry, err error) {
 	q := fmt.Sprintf("SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s;", gdb.geomcol, gdb.geomtable)
 	rows, err := gdb.conn.Query(q)
-	if err == nil {
+	if err != nil {
+		fmt.Printf("Query error: %v", err)
+	} else {
 		geometries := gdb.rowsToGeometries(rows)
 		return geometries, err
-	} else {
-		fmt.Printf("Query error: %v", err)
 	}
 	return
 }

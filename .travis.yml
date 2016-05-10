@@ -10,10 +10,13 @@ before_script:
   - go vet ./...
 
 before_install:
+  - go get -u github.com/golang/lint/golint
   - sudo apt-get install libgeos-dev
 
 install:
   - go get github.com/stretchr/testify/assert
   - go get ./...
 
-script: make test
+script: 
+  - $GOPATH/bin/golint ./...
+  - make test
