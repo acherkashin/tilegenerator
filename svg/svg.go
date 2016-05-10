@@ -24,8 +24,8 @@ func renderPointObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapo
 		return err
 	}
 	x, y := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
-	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
-	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.ID))
 	canvas.Circle(x, y, 5, "")
 	canvas.Gend()
 	return nil
@@ -36,8 +36,8 @@ func renderMultiPointObject(canvas *svg.SVG, object *mapobjects.MapObject, tile 
 	if err != nil {
 		return err
 	}
-	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
-	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.ID))
 	for i := 0; i < n; i++ {
 		g, err := object.Geometry.Geometry(i)
 		if err != nil {
@@ -67,8 +67,8 @@ func renderPolylineObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *m
 		xs = append(xs, x)
 		ys = append(ys, y)
 	}
-	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
-	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.ID))
 	canvas.Polyline(xs, ys, "")
 	canvas.Gend()
 	return nil
@@ -79,8 +79,8 @@ func renderMultiPolylineObject(canvas *svg.SVG, object *mapobjects.MapObject, ti
 	if err != nil {
 		return err
 	}
-	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
-	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.ID))
 	for i := 0; i < n; i++ {
 		g, err := object.Geometry.Geometry(i)
 		if err != nil {
@@ -120,8 +120,8 @@ func renderPolygon(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjec
 		xs = append(xs, x)
 		ys = append(ys, y)
 	}
-	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
-	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.ID))
 	canvas.Polygon(xs, ys, "")
 	canvas.Gend()
 	return nil
@@ -132,8 +132,8 @@ func renderMultiPolygonObject(canvas *svg.SVG, object *mapobjects.MapObject, til
 	if err != nil {
 		return err
 	}
-	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
-	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.ID))
 	for i := 0; i < n; i++ {
 		g, err := object.Geometry.Geometry(i)
 		if err != nil {
@@ -187,7 +187,7 @@ func renderObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobject
 // RenderTile takes a tile struct, map objects and then draws these objects on the tile
 func RenderTile(tile *mapobjects.Tile, objects *[]mapobjects.MapObject, writer io.Writer) {
 	canvas := svg.New(writer)
-	canvas.Start(mapobjects.TILE_SIZE, mapobjects.TILE_SIZE)
+	canvas.Start(mapobjects.TileSize, mapobjects.TileSize)
 	for _, geo := range *objects {
 		renderObject(canvas, &geo, tile)
 	}

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/TerraFactory/tilegenerator/geo"
-	"github.com/lib/pq"
+	_ "github.com/lib/pq" //we want to use blank import here
 )
 
 // GeometryDB is a structure which represents a DB connection
@@ -22,7 +22,7 @@ func (gdb *GeometryDB) rowsToGeometries(rows *sql.Rows) []geo.BaseGeometry {
 	defer tmpRows.Close()
 
 	for tmpRows.Next() {
-		err := tmpRows.Scan(&geometry.Id, &geometry.Value)
+		err := tmpRows.Scan(&geometry.ID, &geometry.Value)
 		if err == nil {
 			geometries = append(geometries, geometry)
 		}
