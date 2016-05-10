@@ -5,6 +5,8 @@ import (
 )
 
 type BaseGeometry struct {
+	Id    int
+	Value string
 }
 
 func (bg *BaseGeometry) FromWKT(wkt string) (*geos.Geometry, error) {
