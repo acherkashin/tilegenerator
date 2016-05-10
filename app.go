@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/TerraFactory/tilegenerator/mapobjects"
-	"github.com/TerraFactory/tilegenerator/svg"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"runtime"
 	"strconv"
+
+	"github.com/TerraFactory/tilegenerator/mapobjects"
+	"github.com/TerraFactory/tilegenerator/svg"
+	"github.com/gorilla/mux"
 )
 
 func main() {
