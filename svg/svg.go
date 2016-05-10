@@ -1,12 +1,12 @@
 package svg
 
 import (
-	"github.com/paulsmith/gogeos/geos"
 	"github.com/TerraFactory/svgo"
 	"github.com/TerraFactory/tilegenerator/mapobjects"
+	"github.com/paulsmith/gogeos/geos"
 	"io"
-	"regexp"
 	"log"
+	"regexp"
 	"strconv"
 )
 
@@ -15,13 +15,13 @@ func prefixSelectors(css string, id int) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return reg.ReplaceAllString(css, "#id" + strconv.Itoa(id) + " $0")
+	return reg.ReplaceAllString(css, "#id"+strconv.Itoa(id)+" $0")
 }
 
 func renderPointObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	coords, err := object.Geometry.Coords()
-	if (err != nil) {
-		return err;
+	if err != nil {
+		return err
 	}
 	x, y := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
 	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
@@ -33,32 +33,32 @@ func renderPointObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapo
 
 func renderMultiPointObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	n, err := object.Geometry.NGeometry()
-	if (err != nil) {
+	if err != nil {
 		return err
 	}
 	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
 	canvas.CSS(prefixSelectors(object.CSS, object.Id))
 	for i := 0; i < n; i++ {
 		g, err := object.Geometry.Geometry(i)
-		if (err != nil) {
-			return err;
+		if err != nil {
+			return err
 		}
 		coords, err := g.Coords()
-		if (err != nil) {
-			return err;
+		if err != nil {
+			return err
 		}
 		x, y := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
 		canvas.Circle(x, y, 5, "")
 
 	}
 	canvas.Gend()
-	return nil;
+	return nil
 }
 
 func renderPolylineObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	coords, err := object.Geometry.Coords()
-	if (err != nil) {
-		return err;
+	if err != nil {
+		return err
 	}
 	xs := []int{}
 	ys := []int{}
@@ -76,19 +76,19 @@ func renderPolylineObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *m
 
 func renderMultiPolylineObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	n, err := object.Geometry.NGeometry()
-	if (err != nil) {
+	if err != nil {
 		return err
 	}
 	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
 	canvas.CSS(prefixSelectors(object.CSS, object.Id))
 	for i := 0; i < n; i++ {
 		g, err := object.Geometry.Geometry(i)
-		if (err != nil) {
-			return err;
+		if err != nil {
+			return err
 		}
 		coords, err := g.Coords()
-		if (err != nil) {
-			return err;
+		if err != nil {
+			return err
 		}
 		xs := []int{}
 		ys := []int{}
@@ -101,17 +101,17 @@ func renderMultiPolylineObject(canvas *svg.SVG, object *mapobjects.MapObject, ti
 
 	}
 	canvas.Gend()
-	return nil;
+	return nil
 }
 
 func renderPolygon(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	boundary, err := object.Geometry.Boundary()
-	if (err != nil) {
-		return err;
+	if err != nil {
+		return err
 	}
 	coords, err := boundary.Coords()
-	if (err != nil) {
-		return err;
+	if err != nil {
+		return err
 	}
 	xs := []int{}
 	ys := []int{}
@@ -129,23 +129,23 @@ func renderPolygon(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjec
 
 func renderMultiPolygonObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	n, err := object.Geometry.NGeometry()
-	if (err != nil) {
+	if err != nil {
 		return err
 	}
 	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
 	canvas.CSS(prefixSelectors(object.CSS, object.Id))
 	for i := 0; i < n; i++ {
 		g, err := object.Geometry.Geometry(i)
-		if (err != nil) {
-			return err;
+		if err != nil {
+			return err
 		}
 		boundary, err := g.Boundary()
-		if (err != nil) {
-			return err;
+		if err != nil {
+			return err
 		}
 		coords, err := boundary.Coords()
-		if (err != nil) {
-			return err;
+		if err != nil {
+			return err
 		}
 		xs := []int{}
 		ys := []int{}
@@ -157,15 +157,15 @@ func renderMultiPolygonObject(canvas *svg.SVG, object *mapobjects.MapObject, til
 		canvas.Polygon(xs, ys, "")
 	}
 	canvas.Gend()
-	return nil;
+	return nil
 }
 
 func renderObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	geometryType, err := object.Geometry.Type()
-	if (err != nil) {
+	if err != nil {
 		return err
 	}
-	switch  geometryType{
+	switch geometryType {
 	case geos.POINT:
 		renderPointObject(canvas, object, tile)
 	case geos.MULTIPOINT:
@@ -181,9 +181,10 @@ func renderObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobject
 	default:
 		return nil
 	}
-	return nil;
+	return nil
 }
 
+// RenderTile takes a tile struct, map objects and then draws these objects on the tile
 func RenderTile(tile *mapobjects.Tile, objects *[]mapobjects.MapObject, writer io.Writer) {
 	canvas := svg.New(writer)
 	canvas.Start(mapobjects.TILE_SIZE, mapobjects.TILE_SIZE)

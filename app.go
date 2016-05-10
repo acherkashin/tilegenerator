@@ -13,11 +13,11 @@ import (
 func main() {
 	runtime.GOMAXPROCS(1) // Temporary workaround
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/tiles/{z}/{x}/{y}.svg", GetTile)
+	router.HandleFunc("/tiles/{z}/{x}/{y}.svg", getTile)
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 
-func GetTile(writer http.ResponseWriter, req *http.Request) {
+func getTile(writer http.ResponseWriter, req *http.Request) {
 	point, _ := mapobjects.NewObject(
 		1,
 		"POINT (0 0)",
