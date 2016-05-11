@@ -191,11 +191,11 @@ func RenderTile(tile *mapobjects.Tile, objects *[]mapobjects.MapObject, writer i
 	for _, geo := range *objects {
 		renderObject(canvas, &geo, tile)
 	}
-	renderSpecialObject(canvas, tile)
+	renderSpecialObjects(canvas, tile)
 	canvas.End()
 }
 
-func renderSpecialObject(canvas *svg.SVG, tile *mapobjects.Tile) {
+func renderSpecialObjects(canvas *svg.SVG, tile *mapobjects.Tile) {
 	patrollingArea, _ := mapobjects.NewObject(
 		32,
 		"LINESTRING (70.6 50.6, 16.183333 51.716667)",
@@ -219,7 +219,7 @@ func renderSpecialObject(canvas *svg.SVG, tile *mapobjects.Tile) {
 
 	routeAviationFlight2, _ := mapobjects.NewObject(
 		30,
-		"LINESTRING (-46.183333 -21.716667, -10.6 -30.6)",
+		"LINESTRING ( -46.183333 -21.716667, 10.6 -30.6)",
 		`line {
 	           fill: none;
 	           stroke: red;
@@ -237,4 +237,35 @@ func renderSpecialObject(canvas *svg.SVG, tile *mapobjects.Tile) {
 
 	RenderBeamDiagram(canvas, point, tile, beamDiagram)
 
+	point2, _ := mapobjects.NewObject(
+		32,
+		"POINT (-50 -50)",
+		`circle {
+	   	fill: red;
+		}`)
+
+	radioModeule1, _ := mapobjects.NewObject(
+		33,
+		"POINT (-49 -49)",
+		`circle {
+	   	fill: red;
+		}`)
+
+	radioModeule2, _ := mapobjects.NewObject(
+		34,
+		"POINT (-51 -50)",
+		`circle {
+	   	fill: red;
+		}`)
+
+	radioModeule3, _ := mapobjects.NewObject(
+		35,
+		"POINT (-53 -50)",
+		`circle {
+	   	fill: red;
+		}`)
+
+	radioModules := []*mapobjects.MapObject{radioModeule1, radioModeule2, radioModeule3}
+
+	RenderSatelliteVisibility(canvas, point2, radioModules, tile)
 }

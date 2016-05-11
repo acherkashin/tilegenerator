@@ -97,14 +97,14 @@ func newRouteAviationFlight(tile *mapobjects.Tile, coords []geos.Coord) *routeAv
 	arrowXs := []int{}
 	arrowYs := []int{}
 
-	if x2 > x1 {
+	if coords[0].X < coords[1].X {
 		arrowXs = append(arrowXs, rightLinePointX-arrowSize,
 			rightLinePointX,
 			rightLinePointX-arrowSize)
 	} else {
-		arrowXs = append(arrowXs, leftLinePoint-arrowSize,
+		arrowXs = append(arrowXs, leftLinePoint+arrowSize,
 			leftLinePoint,
-			leftLinePoint-arrowSize)
+			leftLinePoint+arrowSize)
 	}
 
 	arrowYs = append(arrowYs, centerY+arrowSize/2, centerY, centerY-arrowSize/2)
@@ -317,7 +317,7 @@ func RenderBeamDiagram(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapo
 	canvas.Gtransform(rotation)
 	polarGridXs, polarGridYs := getPointsForPolarGrid(centerX, centerY, beamDiagram.radius)
 	for i := 0; i < len(polarGridXs); i++ {
-		canvas.Line(centerX, centerY, polarGridXs[0], polarGridYs[0], fmt.Sprintf(templateStyle, "gray", strokeWidth))
+		canvas.Line(centerX, centerY, polarGridXs[i], polarGridYs[i], fmt.Sprintf(templateStyle, "gray", strokeWidth))
 	}
 	canvas.Circle(centerX, centerY, int(beamDiagram.radius*0.67), fmt.Sprintf(templateStyle, "yellow", strokeWidth))
 	canvas.Circle(centerX, centerY, int(beamDiagram.radius), fmt.Sprintf(templateStyle, "green", strokeWidth))
@@ -341,12 +341,37 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, ti
 	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
 	transformation := fmt.Sprintf("rotate(%v,%v,%v)", route.rotateAngel, route.centerX, route.centerY)
 
-	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
+	canvas.Group(fmt.Sprintf("id=\"id%v\"  transform=\"%v\"", strconv.Itoa(object.Id), transformation))
 	canvas.CSS(prefixSelectors(object.CSS, object.Id))
-	canvas.Gtransform(transformation)
 	canvas.Line(route.rightLinePointX, route.centerY, route.leftLinePointX, route.centerY, style)
 	canvas.Polyline(route.arrowXs, route.arrowYs, styleArrow)
 	canvas.Gend()
+
+	return nil
+}
+
+func RenderSatelliteVisibility(canvas *svg.SVG, object *mapobjects.MapObject, radiomodules []*mapobjects.MapObject, tile *mapobjects.Tile) error {
+	coords, err := object.Geometry.Coords()
+	if err != nil {
+		return err
+	}
+
+	x1, y1 := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
+	x2, y2 := tile.Degrees2Pixels(float64(coords[0].Y+2), float64(coords[0].X+2))
+	distance := distanceBeetweenPoints(x1, y1, x2, y2)
+	canvas.Group("fill-opacity=\".3\"")
+
+	canvas.ClipPath("id=\"clip-ellipse\"")
+	canvas.Ellipse(x1, y1, int(distance), int(distance*0.7))
+	canvas.ClipEnd()
+
+	canvas.Ellipse(x1, y1, int(distance), int(distance*0.7), "stroke:black; fill: green; ")
+
+	for _, radioModule := range radiomodules {
+		rModeuleCoords, _ := radioModule.Geometry.Coords()
+		x, y := tile.Degrees2Pixels(rModeuleCoords[0].Y, rModeuleCoords[0].X)
+		canvas.Circle(x, y, int(distance*0.2), "stroke:black; fill: blue; clip-path: url(#clip-ellipse)")
+	}
 	canvas.Gend()
 
 	return nil
