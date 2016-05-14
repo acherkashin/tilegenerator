@@ -272,8 +272,8 @@ func RenderPatrollingArea(canvas *svg.SVG, object *mapobjects.MapObject, tile *m
 
 	area := newPatrollingArea(tile, coords)
 	transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
-	canvas.Group("id=\"id" + strconv.Itoa(object.Id) + "\"")
-	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
+	canvas.CSS(prefixSelectors(object.CSS, object.ID))
 	canvas.Gtransform(transformation)
 	canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY)
 	canvas.Polyline(area.rightArrowXs, area.rightArrowYs)
@@ -327,9 +327,7 @@ func RenderBeamDiagram(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapo
 	return nil
 }
 
-/*
-RenderRouteAviationFlight
-*/
+// RenderRouteAviationFlight renders an aviation route on a tile
 func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	coords, err := object.Geometry.Coords()
 	if err != nil {
@@ -341,8 +339,8 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, ti
 	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
 	transformation := fmt.Sprintf("rotate(%v,%v,%v)", route.rotateAngel, route.centerX, route.centerY)
 
-	canvas.Group(fmt.Sprintf("id=\"id%v\"  transform=\"%v\"", strconv.Itoa(object.Id), transformation))
-	canvas.CSS(prefixSelectors(object.CSS, object.Id))
+	canvas.Group(fmt.Sprintf("id=\"id%v\"  transform=\"%v\"", strconv.Itoa(object.ID), transformation))
+	canvas.CSS(prefixSelectors(object.CSS, object.ID))
 	canvas.Line(route.rightLinePointX, route.centerY, route.leftLinePointX, route.centerY, style)
 	canvas.Polyline(route.arrowXs, route.arrowYs, styleArrow)
 	canvas.Gend()
@@ -350,6 +348,7 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, ti
 	return nil
 }
 
+// RenderSatelliteVisibility renders a atellites visibility chart
 func RenderSatelliteVisibility(canvas *svg.SVG, object *mapobjects.MapObject, radiomodules []*mapobjects.MapObject, tile *mapobjects.Tile) error {
 	coords, err := object.Geometry.Coords()
 	if err != nil {
