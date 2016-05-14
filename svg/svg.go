@@ -1,13 +1,14 @@
 package svg
 
 import (
-	"github.com/TerraFactory/svgo"
-	"github.com/TerraFactory/tilegenerator/mapobjects"
-	"github.com/paulsmith/gogeos/geos"
 	"io"
 	"log"
 	"regexp"
 	"strconv"
+
+	"github.com/TerraFactory/svgo"
+	"github.com/TerraFactory/tilegenerator/mapobjects"
+	"github.com/paulsmith/gogeos/geos"
 )
 
 func prefixSelectors(css string, id int) string {
@@ -191,5 +192,81 @@ func RenderTile(tile *mapobjects.Tile, objects *[]mapobjects.MapObject, writer i
 	for _, geo := range *objects {
 		renderObject(canvas, &geo, tile)
 	}
+	renderSpecialObjects(canvas, tile)
 	canvas.End()
+}
+
+func renderSpecialObjects(canvas *svg.SVG, tile *mapobjects.Tile) {
+	patrollingArea, _ := mapobjects.NewObject(
+		32,
+		"LINESTRING (70.6 50.6, 16.183333 51.716667)",
+		`polyline, path, line {
+	           stroke:black; 
+			   stroke-width:1;
+			   fill: none
+	         }`)
+
+	RenderPatrollingArea(canvas, patrollingArea, tile)
+
+	routeAviationFlight, _ := mapobjects.NewObject(
+		30,
+		"LINESTRING (10.6 30.6, 46.183333 21.716667)",
+		`line {
+	           fill: none;
+	           stroke: red;
+	         }`)
+
+	RenderRouteAviationFlight(canvas, routeAviationFlight, tile)
+
+	routeAviationFlight2, _ := mapobjects.NewObject(
+		30,
+		"LINESTRING ( -46.183333 -21.716667, 10.6 -30.6)",
+		`line {
+	           fill: none;
+	           stroke: red;
+	         }`)
+
+	RenderRouteAviationFlight(canvas, routeAviationFlight2, tile)
+
+	beamDiagram := &beamDiagram{radius: 50, angelRotation: 0, sliderBeamWidth: 4, sidelobes: 0}
+	point, _ := mapobjects.NewObject(
+		31,
+		"POINT (-50 30)",
+		`circle {
+	   	fill: red;
+		}`)
+
+	RenderBeamDiagram(canvas, point, tile, beamDiagram)
+
+	point2, _ := mapobjects.NewObject(
+		32,
+		"POINT (-50 -50)",
+		`circle {
+	   	fill: red;
+		}`)
+
+	radioModeule1, _ := mapobjects.NewObject(
+		33,
+		"POINT (-49 -49)",
+		`circle {
+	   	fill: red;
+		}`)
+
+	radioModeule2, _ := mapobjects.NewObject(
+		34,
+		"POINT (-51 -50)",
+		`circle {
+	   	fill: red;
+		}`)
+
+	radioModeule3, _ := mapobjects.NewObject(
+		35,
+		"POINT (-53 -50)",
+		`circle {
+	   	fill: red;
+		}`)
+
+	radioModules := []*mapobjects.MapObject{radioModeule1, radioModeule2, radioModeule3}
+
+	RenderSatelliteVisibility(canvas, point2, radioModules, tile)
 }
