@@ -18,7 +18,7 @@ import (
 var db database.GeometryDB
 
 func printStartingMsg(config *settings.Settings) {
-	fmt.Printf("Starting with settings:\n")
+	fmt.Printf("Starting with the following settings:\n")
 	fmt.Printf("\tGeometry table: %s\n", color.CyanString(config.DBGeometryTable))
 	fmt.Printf("\tGeometry column: %s\n", color.CyanString(config.DBGeometryColumn))
 	fmt.Printf("\tHTTP port: %s\n", color.CyanString(config.HTTPPort))
