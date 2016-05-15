@@ -55,14 +55,14 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 
 	results, err := db.GetAllPatrollingAreas()
 	if err != nil {
-		fmt.Errorf("err: %s", err.Error())
+		writer.WriteHeader(400)
 	} else {
 		for _, r := range results {
 			obj, err := createMapObject(r)
 			if err == nil {
 				objects = append(objects, *obj)
 			} else {
-				fmt.Errorf("object creation err: %s", err.Error())
+				writer.WriteHeader(400)
 			}
 		}
 	}
