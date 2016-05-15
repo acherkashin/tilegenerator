@@ -42,11 +42,13 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 		for _, r := range results {
 			line, err := mapobjects.NewObject(
 				3,
+				47,
 				r.Value,
-				`polyline {
-	           fill: none;
-	           stroke: red;
-	         }`)
+				`polyline, path, line {
+					stroke: black;
+					stroke-width: 1;
+					fill: none
+	       }`)
 			if err == nil {
 				fmt.Printf("line: %v", line)
 				objects = append(objects, *line)

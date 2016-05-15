@@ -1,6 +1,8 @@
 package svg
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"regexp"
@@ -180,7 +182,7 @@ func renderObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobject
 	case geos.MULTIPOLYGON:
 		renderMultiPolygonObject(canvas, object, tile)
 	default:
-		return nil
+		return errors.New(fmt.Sprintf("Unexpected geometry type: %v", geometryType))
 	}
 	return nil
 }
@@ -189,14 +191,22 @@ func renderObject(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobject
 func RenderTile(tile *mapobjects.Tile, objects *[]mapobjects.MapObject, writer io.Writer) {
 	canvas := svg.New(writer)
 	canvas.Start(mapobjects.TileSize, mapobjects.TileSize)
-	for _, geo := range *objects {
-		renderObject(canvas, &geo, tile)
+	for _, obj := range *objects {
+		renderObject(canvas, &obj, tile)
+		renderSpecialObjects(canvas, &obj, tile)
 	}
-	renderSpecialObjects(canvas, tile)
 	canvas.End()
 }
 
-func renderSpecialObjects(canvas *svg.SVG, tile *mapobjects.Tile) {
+func renderSpecialObjects(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
+	switch object.TypeID {
+	case 47:
+		RenderPatrollingArea(canvas, object, tile)
+	default:
+		return errors.New(fmt.Sprintf("Unexpected geometry type: %v", object.TypeID))
+	}
+	return nil
+
 	//patrollingArea, _ := mapobjects.NewObject(
 	//32,
 	//"LINESTRING (70.6 50.6, 16.183333 51.716667)",
