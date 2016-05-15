@@ -56,3 +56,15 @@ func (gdb *GeometryDB) GetAllGeometries() (geometries []geo.BaseGeometry, err er
 	}
 	return
 }
+
+func (gdb *GeometryDB) GetAllFlyRoutes() (geometries []geo.BaseGeometry, err error) {
+	q := fmt.Sprintf("SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id = 47;", gdb.geomcol, gdb.geomtable)
+	rows, err := gdb.conn.Query(q)
+	if err != nil {
+		fmt.Printf("Query error: %v", err)
+	} else {
+		geometries := gdb.rowsToGeometries(rows)
+		return geometries, err
+	}
+	return
+}
