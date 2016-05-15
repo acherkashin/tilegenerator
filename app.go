@@ -88,6 +88,5 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 	}
 	tile := mapobjects.NewTile(x, y, z)
 	writer.Header().Set("Content-Type", "image/svg+xml")
-	writer.WriteHeader(200)
 	svg.RenderTile(tile, &objects, writer)
 }
