@@ -1,71 +1,71 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"runtime"
 	"strconv"
 
+	"github.com/TerraFactory/tilegenerator/database"
+	"github.com/TerraFactory/tilegenerator/geo"
 	"github.com/TerraFactory/tilegenerator/mapobjects"
 	"github.com/TerraFactory/tilegenerator/svg"
 	"github.com/gorilla/mux"
 )
 
+var db database.GeometryDB
+
 func main() {
-	runtime.GOMAXPROCS(1) // Temporary workaround
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/tiles/{z}/{x}/{y}.svg", getTile)
+	db = database.GeometryDB{}
+	db.InitConnection("postgres", "host=localhost user=postgres dbname=okenit.new sslmode=disable", "maps.maps_objects", "the_geom")
+	fmt.Println("Server has been started on 'localhost:8000'")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 
+func createMapObject(dbObj geo.BaseGeometry) (*mapobjects.MapObject, error) {
+	switch dbObj.TypeID {
+	case 47:
+		return mapobjects.NewObject(
+			dbObj.ID,
+			dbObj.TypeID,
+			dbObj.Value,
+			`polyline, path, line {
+					stroke: black;
+					stroke-width: 1;
+					fill: none
+	       }`)
+	case 74:
+		return mapobjects.NewObject(
+			dbObj.ID,
+			dbObj.TypeID,
+			dbObj.Value,
+			`line {
+			fill: none;
+			stroke: red;
+			}`)
+	default:
+		return nil, fmt.Errorf("Unexpected object type: %v", dbObj)
+	}
+}
+
 func getTile(writer http.ResponseWriter, req *http.Request) {
-	point, _ := mapobjects.NewObject(
-		1,
-		"POINT (0 0)",
-		`circle {
-	   	fill: red;
-		}`)
+	var objects []mapobjects.MapObject
 
-	multipoint, _ := mapobjects.NewObject(
-		2,
-		"MULTIPOINT ((37.617778 55.755833), (30.316667 59.95), (33.533333 44.6))",
-		`circle {
-		   fill: blue;
-		 }`)
-
-	line, _ := mapobjects.NewObject(
-		3,
-		"LINESTRING (36.6 50.6, 36.183333 51.716667, 36.083333 52.966667)",
-		`polyline {
-	           fill: none;
-	           stroke: red;
-	         }`)
-
-	multiline, _ := mapobjects.NewObject(
-		4,
-		"MULTILINESTRING ((10 10, 20 20, 10 40),(40 40, 30 30, 40 20, 30 10))",
-		`polyline {
-		  fill: none;
-		  stroke: red
-		}`)
-
-	poly, _ := mapobjects.NewObject(
-		5,
-		"POLYGON ((-30 -10, -40 -40, -20 -40, -10 -20, -30 -10))",
-		`polygon {
-		  fill: rgba(100, 100, 100, .1);
-		  stroke: black
-		}`)
-
-	multipoly, _ := mapobjects.NewObject(
-		6,
-		"MULTIPOLYGON (((10 -10, 40 -10, 40 -40, 10 -40, 10 -10)),((15 -5, 40 -10, 10 -20, -5 10, 15 -5)))",
-		`polygon {
-		  fill: rgba(100, 100, 100, .1);
-		  stroke: black
-		}`)
-
-	objects := []mapobjects.MapObject{*point, *multipoint, *line, *multiline, *poly, *multipoly}
+	results, err := db.GetAllPatrollingAreas()
+	if err != nil {
+		writer.WriteHeader(400)
+	} else {
+		for _, r := range results {
+			obj, err := createMapObject(r)
+			if err == nil {
+				objects = append(objects, *obj)
+			} else {
+				writer.WriteHeader(400)
+			}
+		}
+	}
 
 	vars := mux.Vars(req)
 	x, errX := strconv.Atoi(vars["x"])

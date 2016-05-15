@@ -7,7 +7,7 @@ import (
 
 	"github.com/TerraFactory/svgo"
 	"github.com/TerraFactory/tilegenerator/mapobjects"
-	"github.com/paulsmith/gogeos/geos"
+	"github.com/TerraFactory/wktparser/geometry"
 )
 
 type chartPoint struct {
@@ -42,7 +42,7 @@ type patrollingArea struct {
 	rightArrowXs, rightArrowYs      []int
 }
 
-func newPatrollingArea(tile *mapobjects.Tile, coords []geos.Coord) *patrollingArea {
+func newPatrollingArea(tile *mapobjects.Tile, coords []geometry.Coord) *patrollingArea {
 	x1, y1 := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
 	x2, y2 := tile.Degrees2Pixels(coords[1].Y, coords[1].X)
 
@@ -84,7 +84,7 @@ func newCharPoint(x, y, z, value float64) *chartPoint {
 	return &cp
 }
 
-func newRouteAviationFlight(tile *mapobjects.Tile, coords []geos.Coord) *routeAviationFlight {
+func newRouteAviationFlight(tile *mapobjects.Tile, coords []geometry.Coord) *routeAviationFlight {
 	x1, y1 := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
 	x2, y2 := tile.Degrees2Pixels(coords[1].Y, coords[1].X)
 
@@ -265,10 +265,11 @@ func getMax(chartPoints []*chartPoint) float64 {
 RenderPatrollingArea (район барражирования)
 */
 func RenderPatrollingArea(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
-	coords, err := object.Geometry.Coords()
+	line, err := object.Geometry.AsLineString()
 	if err != nil {
 		return err
 	}
+	coords := line.Coordinates
 
 	area := newPatrollingArea(tile, coords)
 	transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
@@ -302,12 +303,14 @@ func RenderPatrollingArea(canvas *svg.SVG, object *mapobjects.MapObject, tile *m
 RenderBeamDiagram - drawing satellite directional diagram
 */
 func RenderBeamDiagram(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile, beamDiagram *beamDiagram) error {
-	coords, err := object.Geometry.Coords()
+	point, err := object.Geometry.AsPoint()
 	if err != nil {
 		return err
 	}
+	coord := point.Coordinates
+
 	beamDiagram.radius *= float64(tile.Z+1) / 3
-	centerX, centerY := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
+	centerX, centerY := tile.Degrees2Pixels(coord.Y, coord.X)
 
 	strokeWidth := float64(beamDiagram.radius) / float64(100)
 	xs, ys := beamDiagram.getPoints(centerX, centerY)
@@ -329,10 +332,12 @@ func RenderBeamDiagram(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapo
 
 // RenderRouteAviationFlight renders an aviation route on a tile
 func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
-	coords, err := object.Geometry.Coords()
+	line, err := object.Geometry.AsLineString()
 	if err != nil {
 		return err
 	}
+	coords := line.Coordinates
+
 	route := newRouteAviationFlight(tile, coords)
 	weight := 1
 	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
@@ -350,13 +355,15 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, ti
 
 // RenderSatelliteVisibility renders a atellites visibility chart
 func RenderSatelliteVisibility(canvas *svg.SVG, object *mapobjects.MapObject, radiomodules []*mapobjects.MapObject, tile *mapobjects.Tile) error {
-	coords, err := object.Geometry.Coords()
+	point, err := object.Geometry.AsPoint()
 	if err != nil {
 		return err
 	}
 
-	x1, y1 := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
-	x2, y2 := tile.Degrees2Pixels(float64(coords[0].Y+2), float64(coords[0].X+2))
+	coord := point.Coordinates
+
+	x1, y1 := tile.Degrees2Pixels(coord.Y, coord.X)
+	x2, y2 := tile.Degrees2Pixels(float64(coord.Y+2), float64(coord.X+2))
 	distance := distanceBeetweenPoints(x1, y1, x2, y2)
 	canvas.Group("fill-opacity=\".3\"")
 
@@ -367,9 +374,12 @@ func RenderSatelliteVisibility(canvas *svg.SVG, object *mapobjects.MapObject, ra
 	canvas.Ellipse(x1, y1, int(distance), int(distance*0.7), "stroke:black; fill: green; ")
 
 	for _, radioModule := range radiomodules {
-		rModeuleCoords, _ := radioModule.Geometry.Coords()
-		x, y := tile.Degrees2Pixels(rModeuleCoords[0].Y, rModeuleCoords[0].X)
-		canvas.Circle(x, y, int(distance*0.2), "stroke:black; fill: blue; clip-path: url(#clip-ellipse)")
+		rmPoint, err := radioModule.Geometry.AsPoint()
+		if err == nil {
+			rmCoords := rmPoint.Coordinates
+			x, y := tile.Degrees2Pixels(rmCoords.Y, rmCoords.X)
+			canvas.Circle(x, y, int(distance*0.2), "stroke:black; fill: blue; clip-path: url(#clip-ellipse)")
+		}
 	}
 	canvas.Gend()
 

@@ -1,19 +1,23 @@
 package mapobjects
 
-import "github.com/paulsmith/gogeos/geos"
+import (
+	"github.com/TerraFactory/wktparser"
+	"github.com/TerraFactory/wktparser/geometry"
+)
 
 // MapObject represents a geometry on a map
 type MapObject struct {
 	ID       int
-	Geometry geos.Geometry
+	TypeID   int
+	Geometry geometry.Geometry
 	CSS      string
 }
 
 // NewObject creates new MapObject with a parsed from WKT geometry
-func NewObject(id int, wkt, css string) (*MapObject, error) {
-	geometry, err := geos.FromWKT(wkt)
+func NewObject(id int, typeID int, wkt, css string) (*MapObject, error) {
+	geo, err := wktparser.Parse(wkt)
 	if err != nil {
 		return nil, err
 	}
-	return &MapObject{ID: id, Geometry: *geometry, CSS: css}, nil
+	return &MapObject{ID: id, TypeID: typeID, Geometry: geo, CSS: css}, nil
 }
