@@ -14,10 +14,10 @@ type MapObject struct {
 }
 
 // NewObject creates new MapObject with a parsed from WKT geometry
-func NewObject(id int, typeId int, wkt, css string) (*MapObject, error) {
+func NewObject(id int, typeID int, wkt, css string) (*MapObject, error) {
 	geo, err := wktparser.Parse(wkt)
 	if err != nil {
 		return nil, err
 	}
-	return &MapObject{ID: id, TypeID: typeId, Geometry: geo, CSS: css}, nil
+	return &MapObject{ID: id, TypeID: typeID, Geometry: geo, CSS: css}, nil
 }

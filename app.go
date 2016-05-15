@@ -21,6 +21,7 @@ func main() {
 	router.HandleFunc("/tiles/{z}/{x}/{y}.svg", getTile)
 	db = database.GeometryDB{}
 	db.InitConnection("postgres", "host=localhost user=postgres dbname=okenit.new sslmode=disable", "maps.maps_objects", "the_geom")
+	fmt.Println("Server has been started on 'localhost:8000'")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 
@@ -46,7 +47,7 @@ func createMapObject(dbObj geo.BaseGeometry) (*mapobjects.MapObject, error) {
 			stroke: red;
 			}`)
 	default:
-		return nil, errors.New(fmt.Sprintf("Unexpected object type: %v", dbObj))
+		return nil, fmt.Errorf("Unexpected object type: %v", dbObj)
 	}
 }
 

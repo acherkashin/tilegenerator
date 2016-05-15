@@ -203,7 +203,7 @@ func renderSpecialObjects(canvas *svg.SVG, object *mapobjects.MapObject, tile *m
 	case 74:
 		RenderRouteAviationFlight(canvas, object, tile)
 	default:
-		return errors.New(fmt.Sprintf("Unexpected geometry type: %v", object.TypeID))
+		return fmt.Errorf("Unexpected geometry type: %v", object.TypeID)
 	}
 	return nil
 
