@@ -22,7 +22,7 @@ func (gdb *GeometryDB) rowsToGeometries(rows *sql.Rows) []geo.BaseGeometry {
 	defer tmpRows.Close()
 
 	for tmpRows.Next() {
-		err := tmpRows.Scan(&geometry.ID, &geometry.Value)
+		err := tmpRows.Scan(&geometry.ID, &geometry.TypeID, &geometry.Value)
 		if err == nil {
 			geometries = append(geometries, geometry)
 		}
@@ -46,7 +46,7 @@ func (gdb *GeometryDB) InitConnection(username string, connstring string, geomta
 
 // GetAllGeometries returns a slice of all geometries in a database
 func (gdb *GeometryDB) GetAllGeometries() (geometries []geo.BaseGeometry, err error) {
-	q := fmt.Sprintf("SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s;", gdb.geomcol, gdb.geomtable)
+	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s;", gdb.geomcol, gdb.geomtable)
 	rows, err := gdb.conn.Query(q)
 	if err != nil {
 		fmt.Printf("Query error: %v", err)
@@ -57,8 +57,9 @@ func (gdb *GeometryDB) GetAllGeometries() (geometries []geo.BaseGeometry, err er
 	return
 }
 
-func (gdb *GeometryDB) GetAllFlyRoutes() (geometries []geo.BaseGeometry, err error) {
-	q := fmt.Sprintf("SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id = 47;", gdb.geomcol, gdb.geomtable)
+// GetAllPatrollingAreas is a tmp method (don't use it in production parts of the app)
+func (gdb *GeometryDB) GetAllPatrollingAreas() (geometries []geo.BaseGeometry, err error) {
+	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id = 47 OR type_id = 74;", gdb.geomcol, gdb.geomtable)
 	rows, err := gdb.conn.Query(q)
 	if err != nil {
 		fmt.Printf("Query error: %v", err)

@@ -1,13 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"runtime"
 	"strconv"
 
 	"github.com/TerraFactory/tilegenerator/database"
+	"github.com/TerraFactory/tilegenerator/geo"
 	"github.com/TerraFactory/tilegenerator/mapobjects"
 	"github.com/TerraFactory/tilegenerator/svg"
 	"github.com/gorilla/mux"
@@ -16,7 +17,6 @@ import (
 var db database.GeometryDB
 
 func main() {
-	runtime.GOMAXPROCS(1) // Temporary workaround
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/tiles/{z}/{x}/{y}.svg", getTile)
 	db = database.GeometryDB{}
@@ -24,34 +24,43 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 
-func getTile(writer http.ResponseWriter, req *http.Request) {
-	var objects []mapobjects.MapObject
-	//line, _ := mapobjects.NewObject(
-	//3,
-	//"LINESTRING (36.6 50.6, 36.183333 51.716667, 36.083333 52.966667)",
-	//`polyline {
-	//fill: none;
-	//stroke: red;
-	//}`)
-
-	results, err := db.GetAllFlyRoutes()
-	if err != nil {
-		fmt.Errorf("err: %s", err.Error())
-	} else {
-		fmt.Printf("res: %v", results)
-		for _, r := range results {
-			line, err := mapobjects.NewObject(
-				3,
-				47,
-				r.Value,
-				`polyline, path, line {
+func createMapObject(dbObj geo.BaseGeometry) (*mapobjects.MapObject, error) {
+	switch dbObj.TypeID {
+	case 47:
+		return mapobjects.NewObject(
+			dbObj.ID,
+			dbObj.TypeID,
+			dbObj.Value,
+			`polyline, path, line {
 					stroke: black;
 					stroke-width: 1;
 					fill: none
 	       }`)
+	case 74:
+		return mapobjects.NewObject(
+			dbObj.ID,
+			dbObj.TypeID,
+			dbObj.Value,
+			`line {
+			fill: none;
+			stroke: red;
+			}`)
+	default:
+		return nil, errors.New(fmt.Sprintf("Unexpected object type: %v", dbObj))
+	}
+}
+
+func getTile(writer http.ResponseWriter, req *http.Request) {
+	var objects []mapobjects.MapObject
+
+	results, err := db.GetAllPatrollingAreas()
+	if err != nil {
+		fmt.Errorf("err: %s", err.Error())
+	} else {
+		for _, r := range results {
+			obj, err := createMapObject(r)
 			if err == nil {
-				fmt.Printf("line: %v", line)
-				objects = append(objects, *line)
+				objects = append(objects, *obj)
 			} else {
 				fmt.Errorf("object creation err: %s", err.Error())
 			}

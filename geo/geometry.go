@@ -6,8 +6,9 @@ import (
 
 // BaseGeometry is a geometry structure
 type BaseGeometry struct {
-	ID    int
-	Value string
+	ID     int
+	TypeID int
+	Value  string
 }
 
 // FromWKT parses WKT into a structure
