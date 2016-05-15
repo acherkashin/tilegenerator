@@ -9,19 +9,30 @@ import (
 	"github.com/TerraFactory/tilegenerator/database"
 	"github.com/TerraFactory/tilegenerator/geo"
 	"github.com/TerraFactory/tilegenerator/mapobjects"
+	"github.com/TerraFactory/tilegenerator/settings"
 	"github.com/TerraFactory/tilegenerator/svg"
+	"github.com/fatih/color"
 	"github.com/gorilla/mux"
 )
 
 var db database.GeometryDB
 
+func printStartingMsg(config *settings.Settings) {
+	fmt.Printf("Starting with the following settings:\n")
+	fmt.Printf("\tGeometry table: %s\n", color.CyanString(config.DBGeometryTable))
+	fmt.Printf("\tGeometry column: %s\n", color.CyanString(config.DBGeometryColumn))
+	fmt.Printf("\tHTTP port: %s\n", color.CyanString(config.HTTPPort))
+	color.Green("\n Started!\n")
+}
+
 func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/tiles/{z}/{x}/{y}.svg", getTile)
 	db = database.GeometryDB{}
-	db.InitConnection("postgres", "host=localhost user=postgres dbname=okenit.new sslmode=disable", "maps.maps_objects", "the_geom")
-	fmt.Println("Server has been started on 'localhost:8000'")
-	log.Fatal(http.ListenAndServe(":8000", router))
+	conf := settings.GetSettings()
+	db.InitConnection(conf.DBInstanceName, conf.DBConnectionString, conf.DBGeometryTable, conf.DBGeometryColumn)
+	printStartingMsg(conf)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", conf.HTTPPort), router))
 }
 
 func createMapObject(dbObj geo.BaseGeometry) (*mapobjects.MapObject, error) {
