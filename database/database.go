@@ -62,7 +62,7 @@ func (gdb *GeometryDB) GetAllPatrollingAreas() (geometries []geo.BaseGeometry, e
 	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id = 47 OR type_id = 74;", gdb.geomcol, gdb.geomtable)
 	rows, err := gdb.conn.Query(q)
 	if err != nil {
-		fmt.Printf("Query error: %v", err)
+		fmt.Printf("Query error: %s\n", err.Error())
 	} else {
 		geometries := gdb.rowsToGeometries(rows)
 		return geometries, err

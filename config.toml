@@ -1,0 +1,8 @@
+[database]
+  connection_string = "host=localhost user=postgres dbname=testdb sslmode=disable"
+  geometry_table = "maps.maps_object"
+  geometry_column = "the_geom"
+  instance_name = "postgres"
+
+[http]
+  port = "9081" 
