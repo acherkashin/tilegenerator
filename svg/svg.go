@@ -1,7 +1,6 @@
 package svg
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
