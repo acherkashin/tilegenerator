@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/TerraFactory/svgo"
+	"github.com/TerraFactory/tilegenerator/geo"
 	"github.com/TerraFactory/tilegenerator/mapobjects"
 	"github.com/TerraFactory/wktparser/geometry"
 )
@@ -385,3 +386,178 @@ func RenderSatelliteVisibility(canvas *svg.SVG, object *mapobjects.MapObject, ra
 
 	return nil
 }
+
+func RenderSatellite(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
+	point, err := object.Geometry.AsPoint()
+	if err != nil {
+		return err
+	}
+	coord := point.Coordinates
+	centerX, centerY := tile.Degrees2Pixels(coord.Y, coord.X)
+	radius := 10
+
+	var typeSatellite = object.TypeID
+	fill := determineFill(typeSatellite)
+	stroke := determineStroke(object)
+	text := determineText(typeSatellite)
+
+	canvas.Circle(centerX, centerY, radius, fmt.Sprintf("%v; %v", stroke, fill))
+	canvas.Line(centerX, centerY+radius, centerX+radius+radius/2, centerY+radius+radius/3, stroke)
+	canvas.Line(centerX, centerY-radius, centerX+radius+radius/2, centerY-radius-radius/3, stroke)
+	canvas.Text(centerX-radius/2, centerY+radius/5, text, "font-size:10px;")
+
+	return nil
+}
+func determineStroke(object *mapobjects.MapObject) string {
+	valueAttributeAlly := getValueAttribute(object.Attrs, "ALLY_ENEMY")
+	isAlly := valueAttributeAlly == ""
+
+	if isAlly {
+		return "stroke: red"
+	}
+
+	return "stroke: blue"
+}
+func getValueAttribute(attrs []geo.BaseAttribute, code string) string {
+	for _, attr := range attrs {
+		if attr.Code == code {
+			return attr.Value
+		}
+	}
+	return ""
+}
+
+func determineFill(typeSatellite int) string {
+	var fill string
+	switch typeSatellite {
+	case SatellitePhotoReconnaissance:
+		fill = "fill: rgb(174,198,219)"
+	case SatelliteOptoelectronicReconnaissance:
+		fill = "fill: rgb(255, 230, 153)"
+	case SatelliteRadiolocatingReconnaissance:
+		fill = "fill: rgb(255,80,80)"
+	case SatelliteCommunicationL:
+		fill = "fill: rgb(255,255,0)"
+	case SatelliteCommunicationS:
+		fill = "fill: rgb(102,255,255)"
+	case SatelliteCommunicationC:
+		fill = "fill: rgb(51,102,255)"
+	case SatelliteCommunicationX:
+		fill = "fill: rgb(102,255,102)"
+	case SatelliteCommunicationKu:
+		fill = "fill: rgb(255,0,255)"
+	case SatelliteCommunicationKa:
+		fill = "fill: rgb(217,217,217)"
+	default:
+		fill = "fill: none"
+	}
+	return fill
+}
+
+func determineText(typeSatellite int) string {
+	var text string
+	switch typeSatellite {
+	case SatellitePhotoReconnaissance,
+		SatelliteOptoelectronicReconnaissance,
+		SatelliteRadiolocatingReconnaissance:
+		text = "Р"
+	case SatelliteNavigation:
+		text = "Н"
+	case SatelliteCommunicationC,
+		SatelliteCommunicationK,
+		SatelliteCommunicationKa,
+		SatelliteCommunicationKu,
+		SatelliteCommunicationL,
+		SatelliteCommunicationS,
+		SatelliteCommunicationX:
+		text = "C"
+	case SatelliteMeteorological:
+		text = "М"
+	case SatelliteExperimental:
+		text = "Э"
+	case SatelliteRepeater:
+		text = "РТ"
+	case SatelliteRemoteSoundingEarth:
+		text = "ДЗ"
+	case SatelliteAttackWarning:
+		text = "ПР"
+	default:
+		text = ""
+	}
+
+	return text
+}
+
+const (
+	/// Спутник
+	Satellite = 149
+	/// Спутник связи (L-диапазон)
+	SatelliteCommunicationL = 150
+	/// Спутник связи (S-диапазон)
+	SatelliteCommunicationS = 151
+	/// Спутник связи (C-диапазон)
+	SatelliteCommunicationC = 152
+	/// Спутник связи (X-диапазон)
+	SatelliteCommunicationX = 153
+	/// Спутник связи (Ku-диапазон)
+	SatelliteCommunicationKu = 154
+	/// Спутник связи (Ka-диапазон)
+	SatelliteCommunicationKa = 155
+	/// Спутник связи (K-диапазон)
+	SatelliteCommunicationK = 156
+	/// Спутник фото-разведки
+	SatellitePhotoReconnaissance = 161
+	/// Оптикоэлектронный спутник разведки
+	SatelliteOptoelectronicReconnaissance = 162
+	/// Радиолокационный спутник разведки
+	SatelliteRadiolocatingReconnaissance = 163
+	/// Спутник навигации
+	SatelliteNavigation = 160
+	/// Метеорологический спутник
+	SatelliteMeteorological = 159
+	/// Эксперементальный спутник
+	SatelliteExperimental = 158
+	/// Спутник - ретранслятор
+	SatelliteRepeater = 165
+	/// Спутник дистанционного зондирования земли
+	SatelliteRemoteSoundingEarth = 164
+	/// Спутник системы предупреждения о ракетном нападении
+	SatelliteAttackWarning = 157
+)
+
+// const (
+// 	/// Спутник
+// 	Satellite = 3000000001
+// 	/// Спутник связи (L-диапазон)
+// 	SatelliteCommunicationL = 3000000002
+// 	/// Спутник связи (S-диапазон)
+// 	SatelliteCommunicationS = 3000000012
+// 	/// Спутник связи (C-диапазон)
+// 	SatelliteCommunicationC = 3000000022
+// 	/// Спутник связи (X-диапазон)
+// 	SatelliteCommunicationX = 3000000032
+// 	/// Спутник связи (Ku-диапазон)
+// 	SatelliteCommunicationKu = 3000000042
+// 	/// Спутник связи (Ka-диапазон)
+// 	SatelliteCommunicationKa = 3000000052
+// 	/// Спутник связи (K-диапазон)
+// 	SatelliteCommunicationK = 3000000062
+// 	/// Спутник фото-разведки
+// 	SatellitePhotoReconnaissance = 3000000003
+// 	/// Оптикоэлектронный спутник разведки
+// 	SatelliteOptoelectronicReconnaissance = 3000000013
+// 	/// Радиолокационный спутник разведки
+// 	SatelliteRadiolocatingReconnaissance = 3000000023
+// 	/// Спутник навигации
+// 	SatelliteNavigation = 3000000004
+// 	/// Метеорологический спутник
+// 	SatelliteMeteorological = 3000000005
+// 	/// Эксперементальный спутник
+// 	SatelliteExperimental = 3000000006
+// 	/// Спутник - ретранслятор
+// 	SatelliteRepeater = 3000000007
+// 	/// Спутник дистанционного зондирования земли
+// 	SatelliteRemoteSoundingEarth = 3000000008
+// 	/// Спутник системы предупреждения о ракетном нападении
+// 	SatelliteAttackWarning = 3000000009
+// )
