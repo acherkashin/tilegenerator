@@ -88,6 +88,7 @@ func (gdb *GeometryDB) GetAllPatrollingAreas() (geometries []geo.BaseGeometry, e
 	return
 }
 
+// GetAllAttributes returns all the attributes of an objects
 func (gdb *GeometryDB) GetAllAttributes(ids []int) (attrs []geo.BaseAttribute, err error) {
 	var tmpIds []string
 	for _, id := range ids {
