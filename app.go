@@ -46,7 +46,8 @@ func createMapObject(dbObj geo.BaseGeometry) (*mapobjects.MapObject, error) {
 					stroke: black;
 					stroke-width: 1;
 					fill: none
-	       }`)
+	       }`,
+			nil)
 	case 74:
 		return mapobjects.NewObject(
 			dbObj.ID,
@@ -55,8 +56,21 @@ func createMapObject(dbObj geo.BaseGeometry) (*mapobjects.MapObject, error) {
 			`line {
 			fill: none;
 			stroke: red;
-			}`)
+			}`,
+			nil)
 	default:
+		if dbObj.TypeID >= 149 && dbObj.TypeID <= 165 {
+			return mapobjects.NewObject(
+				dbObj.ID,
+				dbObj.TypeID,
+				dbObj.Value,
+				`line {
+			fill: none;
+			stroke: red;
+			}`,
+				dbObj.Attrs)
+		}
+
 		return nil, fmt.Errorf("Unexpected object type: %v", dbObj)
 	}
 }
@@ -108,7 +122,7 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 		writer.WriteHeader(400)
 		return
 	}
-	fmt.Println("It's still OK")
+
 	tile := mapobjects.NewTile(x, y, z)
 	writer.Header().Set("Content-Type", "image/svg+xml")
 	svg.RenderTile(tile, &objects, writer)

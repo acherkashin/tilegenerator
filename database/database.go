@@ -3,10 +3,11 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"github.com/TerraFactory/tilegenerator/geo"
-	_ "github.com/lib/pq" //we want to use blank import here
 	"strconv"
 	"strings"
+
+	"github.com/TerraFactory/tilegenerator/geo"
+	_ "github.com/lib/pq" //we want to use blank import here
 )
 
 // GeometryDB is a structure which represents a DB connection
@@ -77,7 +78,7 @@ func (gdb *GeometryDB) GetAllGeometries() (geometries []geo.BaseGeometry, err er
 
 // GetAllPatrollingAreas is a tmp method (don't use it in production parts of the app)
 func (gdb *GeometryDB) GetAllPatrollingAreas() (geometries []geo.BaseGeometry, err error) {
-	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id in(47, 74);", gdb.geomcol, gdb.geomtable)
+	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id BETWEEN 149 AND 165 OR type_id In(47,74);", gdb.geomcol, gdb.geomtable)
 	rows, err := gdb.conn.Query(q)
 	if err != nil {
 		fmt.Printf("Query error: %s\n", err.Error())
