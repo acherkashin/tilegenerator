@@ -63,20 +63,40 @@ func createMapObject(dbObj geo.BaseGeometry) (*mapobjects.MapObject, error) {
 
 func getTile(writer http.ResponseWriter, req *http.Request) {
 	var objects []mapobjects.MapObject
+	var ids []int
 
-	results, err := db.GetAllPatrollingAreas()
-	attrs, _ := db.GetAllAttributes([]int{1575, 15, 1576})
-	fmt.Println(attrs)
-	if err != nil {
-		writer.WriteHeader(400)
-	} else {
-		for _, r := range results {
-			obj, err := createMapObject(r)
-			if err == nil {
-				objects = append(objects, *obj)
-			} else {
-				writer.WriteHeader(400)
+	results, objErr := db.GetAllPatrollingAreas()
+	if objErr != nil {
+		fmt.Println(objErr.Error())
+		return
+	}
+	for _, obj := range results {
+		ids = append(ids, obj.ID)
+	}
+
+	attrs, attrErr := db.GetAllAttributes(ids)
+	if attrErr != nil {
+		fmt.Println(attrErr.Error())
+		return
+	}
+
+	for _, r := range results {
+		var objAttrs []geo.BaseAttribute
+		for _, attr := range attrs {
+			if attr.ObjectID == r.ID {
+				objAttrs = append(objAttrs, attr)
 			}
+		}
+
+		r.Attrs = objAttrs
+
+		obj, err := createMapObject(r)
+		if err == nil {
+			objects = append(objects, *obj)
+		} else {
+			fmt.Println(err.Error())
+			writer.WriteHeader(400)
+			return
 		}
 	}
 
@@ -88,6 +108,7 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 		writer.WriteHeader(400)
 		return
 	}
+	fmt.Println("It's still OK")
 	tile := mapobjects.NewTile(x, y, z)
 	writer.Header().Set("Content-Type", "image/svg+xml")
 	svg.RenderTile(tile, &objects, writer)

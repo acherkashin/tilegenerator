@@ -77,7 +77,7 @@ func (gdb *GeometryDB) GetAllGeometries() (geometries []geo.BaseGeometry, err er
 
 // GetAllPatrollingAreas is a tmp method (don't use it in production parts of the app)
 func (gdb *GeometryDB) GetAllPatrollingAreas() (geometries []geo.BaseGeometry, err error) {
-	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id = 47 OR type_id = 74;", gdb.geomcol, gdb.geomtable)
+	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id in(47, 74);", gdb.geomcol, gdb.geomtable)
 	rows, err := gdb.conn.Query(q)
 	if err != nil {
 		fmt.Printf("Query error: %s\n", err.Error())
@@ -89,14 +89,15 @@ func (gdb *GeometryDB) GetAllPatrollingAreas() (geometries []geo.BaseGeometry, e
 }
 
 // GetAllAttributes returns all the attributes of an objects
-func (gdb *GeometryDB) GetAllAttributes(ids []int) (attrs []geo.BaseAttribute, err error) {
+func (gdb *GeometryDB) GetAllAttributes(ids []int) ([]geo.BaseAttribute, error) {
 	var tmpIds []string
+	var attrs []geo.BaseAttribute
 	for _, id := range ids {
 		tmpIds = append(tmpIds, strconv.Itoa(id))
 	}
 
 	q := fmt.Sprintf(`
-SELECT av.value, a.code_attribute, state.object_id FROM 
+SELECT COALESCE(av.value, '') as value, a.code_attribute, state.object_id FROM 
 maps.object_attribute_values av
 inner join maps.object_attributes a on a.id=av.attribute_id 
 inner join 
@@ -110,8 +111,8 @@ on state.id=av.object_state_history_id;
 	if err != nil {
 		fmt.Printf("Query error: %s\n", err.Error())
 	} else {
-		attrs := gdb.rowsToAttrs(rows)
+		attrs = gdb.rowsToAttrs(rows)
 		return attrs, err
 	}
-	return
+	return attrs, nil
 }
