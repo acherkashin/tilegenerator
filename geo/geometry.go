@@ -6,3 +6,9 @@ type BaseGeometry struct {
 	TypeID int
 	Value  string
 }
+
+type BaseAttribute struct {
+	Value    string
+	Code     string
+	ObjectID int
+}

@@ -65,6 +65,8 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 	var objects []mapobjects.MapObject
 
 	results, err := db.GetAllPatrollingAreas()
+	attrs, _ := db.GetAllAttributes([]int{1575, 15, 1576})
+	fmt.Println(attrs)
 	if err != nil {
 		writer.WriteHeader(400)
 	} else {

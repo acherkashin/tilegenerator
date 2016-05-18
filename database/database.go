@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/TerraFactory/tilegenerator/geo"
 	_ "github.com/lib/pq" //we want to use blank import here
+	"strconv"
+	"strings"
 )
 
 // GeometryDB is a structure which represents a DB connection
@@ -28,6 +30,22 @@ func (gdb *GeometryDB) rowsToGeometries(rows *sql.Rows) []geo.BaseGeometry {
 		}
 	}
 	return geometries
+}
+
+// Transfer raw sql rows into a slice of BaseGeometry structs
+func (gdb *GeometryDB) rowsToAttrs(rows *sql.Rows) []geo.BaseAttribute {
+	attrs := []geo.BaseAttribute{}
+	attr := geo.BaseAttribute{}
+	tmpRows := *rows
+	defer tmpRows.Close()
+
+	for tmpRows.Next() {
+		err := tmpRows.Scan(&attr.Value, &attr.Code, &attr.ObjectID)
+		if err == nil {
+			attrs = append(attrs, attr)
+		}
+	}
+	return attrs
 }
 
 // InitConnection creates db connection. Use "geotable" parameter as a table with geometries and
@@ -66,6 +84,33 @@ func (gdb *GeometryDB) GetAllPatrollingAreas() (geometries []geo.BaseGeometry, e
 	} else {
 		geometries := gdb.rowsToGeometries(rows)
 		return geometries, err
+	}
+	return
+}
+
+func (gdb *GeometryDB) GetAllAttributes(ids []int) (attrs []geo.BaseAttribute, err error) {
+	var tmpIds []string
+	for _, id := range ids {
+		tmpIds = append(tmpIds, strconv.Itoa(id))
+	}
+
+	q := fmt.Sprintf(`
+SELECT av.value, a.code_attribute, state.object_id FROM 
+maps.object_attribute_values av
+inner join maps.object_attributes a on a.id=av.attribute_id 
+inner join 
+(
+	select id, object_id from maps.object_state_histories
+	where object_id in (%s) order by id desc limit(%v)
+) as state
+on state.id=av.object_state_history_id;
+	`, strings.Join(tmpIds, ","), len(ids))
+	rows, err := gdb.conn.Query(q)
+	if err != nil {
+		fmt.Printf("Query error: %s\n", err.Error())
+	} else {
+		attrs := gdb.rowsToAttrs(rows)
+		return attrs, err
 	}
 	return
 }
