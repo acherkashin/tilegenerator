@@ -201,6 +201,11 @@ func renderSpecialObjects(canvas *svg.SVG, object *mapobjects.MapObject, tile *m
 		RenderPatrollingArea(canvas, object, tile)
 	case 74:
 		RenderRouteAviationFlight(canvas, object, tile)
+	case 59:
+		{
+			beamDiagram := &beamDiagram{radius: 20, angelRotation: 0, sliderBeamWidth: 4, sidelobes: 0}
+			RenderBeamDiagram(canvas, object, tile, beamDiagram)
+		}
 	default:
 		if object.TypeID >= 149 && object.TypeID <= 165 {
 			RenderSatellite(canvas, object, tile)

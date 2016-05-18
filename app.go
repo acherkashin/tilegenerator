@@ -58,6 +58,16 @@ func createMapObject(dbObj geo.BaseGeometry) (*mapobjects.MapObject, error) {
 			stroke: red;
 			}`,
 			nil)
+	case 59: //ГЦСС
+		return mapobjects.NewObject(
+			dbObj.ID,
+			dbObj.TypeID,
+			dbObj.Value,
+			`line {
+			fill: none;
+			stroke: red;
+			}`,
+			dbObj.Attrs)
 	default:
 		if dbObj.TypeID >= 149 && dbObj.TypeID <= 165 {
 			return mapobjects.NewObject(

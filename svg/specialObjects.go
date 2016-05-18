@@ -308,6 +308,11 @@ func RenderBeamDiagram(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapo
 	if err != nil {
 		return err
 	}
+
+	// needShow := getValueAttribute(object.Attrs, "NEED_SHOW_DIRECTIONAL_DIAGRAM")
+	// isAntenna := getValueAttribute(object.Attrs, "IS_SHORTWAVE_ANTENNA")
+
+	// if needShow == "TRUE" && isAntenna == "TRUE" {
 	coord := point.Coordinates
 
 	beamDiagram.radius *= float64(tile.Z+1) / 3
@@ -327,7 +332,7 @@ func RenderBeamDiagram(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapo
 	canvas.Circle(centerX, centerY, int(beamDiagram.radius), fmt.Sprintf(templateStyle, "green", strokeWidth))
 	canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
 	canvas.Gend()
-
+	// }
 	return nil
 }
 
