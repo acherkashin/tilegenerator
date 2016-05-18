@@ -29,3 +29,4 @@ _testmain.go
 # Idea
 .idea
 tilegenerator
+config.toml
