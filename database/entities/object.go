@@ -1,4 +1,4 @@
-package mapobjects
+package entities
 
 import (
 	"github.com/TerraFactory/wktparser"
