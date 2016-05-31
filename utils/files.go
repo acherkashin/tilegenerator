@@ -10,3 +10,8 @@ func FileExists(name *string) bool {
 	}
 	return true
 }
+
+func IsDirectory(path string) bool {
+	fileInfo, err := os.Stat(path)
+	return fileInfo.IsDir() && err != nil
+}

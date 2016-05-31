@@ -12,6 +12,7 @@ import (
 	"github.com/TerraFactory/tilegenerator/tiles"
 	"github.com/fatih/color"
 	"github.com/gorilla/mux"
+	"github.com/TerraFactory/tilegenerator/settings/styling"
 )
 
 var db database.GeometryDB
@@ -41,11 +42,18 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 	tiles.RenderTile(tile, &objects, writer)
 }
 
-func Listen(conf *settings.Settings) {
-	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/tiles/{z}/{x}/{y}.svg", getTile)
+func StartApplication(conf *settings.Settings) {
+	/* connect to DB */
+	/* pool of connections needed here later. */
 	db = database.GeometryDB{}
 	db.InitConnection(conf.DBInstanceName, conf.DBConnectionString, conf.DBGeometryTable, conf.DBGeometryColumn)
+
+	/* Read styles from file system */
+	styling.GetStyles(conf)
+
+	/* Create router and start listening */
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/tiles/{z}/{x}/{y}.svg", getTile)
 	printStartingMsg(conf)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", conf.HTTPPort), router))
 }
