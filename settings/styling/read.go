@@ -1,26 +1,63 @@
 package styling
 
 import (
-	"sync"
-	"github.com/TerraFactory/tilegenerator/utils"
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"github.com/pelletier/go-toml"
+	"sync"
+
 	"github.com/TerraFactory/tilegenerator/settings"
+	"github.com/TerraFactory/tilegenerator/utils"
+	"github.com/pelletier/go-toml"
+	"strings"
+	"github.com/TerraFactory/wktparser/geometry"
 )
 
 var styles *map[string]Style
 var errs []error
 var once sync.Once
 
+func parseType(t string) (int, error) {
+	switch strings.ToUpper(t) {
+	case "POINT":
+		return geometry.TPoint, nil
+	case "MULTIPOINT":
+		return geometry.TMultiPoint, nil
+	case "LINE":
+	case "POLYLINE":
+	case "LINESTRING":
+		return geometry.TLineString, nil
+	case "MULTILINE":
+	case "MULTIPOLYLINE":
+	case "MULTILINESTRING":
+		return geometry.TMultiLineString, nil
+	case "POLYGON":
+		return geometry.TPolygon, nil
+	}
+	return -1, errors.New(fmt.Sprintf("Failed to parse geometry type %s", t))
+}
+
 func readStylesFile(filename string) (*Style, error) {
-	toml, err := toml.LoadFile(filename)
+	styles, err := toml.LoadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 	style := Style{}
-	style.Name = toml.Get("name").(string)
+	style.Name = styles.Get("Name").(string)
+	geometryType, err := parseType(styles.Get("GeometryType").(string))
+	if err != nil {
+		return nil, err
+	}
+	style.GeometryType = geometryType
+	prims := styles.Get("primitives").([]*toml.TomlTree)
+	for _, p := range prims {
+		t := p.Get("Type").(string)
+		primitive, _ := NewPrimitive(t)
+		for _, key := range p.Keys() {
+			primitive.SetParam(key, p.Get(key))
+		}
+		style.Primitives = append(style.Primitives, primitive)
+	}
 	return &style, nil
 }
 
@@ -32,7 +69,7 @@ func readStylesDirectory(directory string) (*map[string]Style, []error) {
 		return nil, []error{errors.New(fmt.Sprint("Path %s is not a directory", directory))}
 	}
 	files, err := ioutil.ReadDir(directory)
-	if (err != nil) {
+	if err != nil {
 		return nil, []error{err}
 	}
 	for _, file := range files {
@@ -59,6 +96,5 @@ func GetStyles(conf *settings.Settings) (*map[string]Style, []error) {
 	once.Do(func() {
 		styles, errs = readStylesDirectory(conf.StylesDirectory)
 	})
-	fmt.Println(*styles)
 	return styles, errs
 }
