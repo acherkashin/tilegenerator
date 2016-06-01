@@ -52,10 +52,7 @@ func readStylesFile(filename string) (*Style, error) {
 	prims := styles.Get("primitives").([]*toml.TomlTree)
 	for _, p := range prims {
 		t := p.Get("Type").(string)
-		primitive, _ := NewPrimitive(t)
-		for _, key := range p.Keys() {
-			primitive.SetParam(key, p.Get(key))
-		}
+		primitive, _ := NewPrimitive(t, p.ToMap())
 		style.Primitives = append(style.Primitives, primitive)
 	}
 	return &style, nil

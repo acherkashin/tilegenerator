@@ -24,17 +24,22 @@ func (text TextPrimitive) Render(svg *svg.SVG, geo geometry.Geometry) {
 		text.Content)
 }
 
-func (text TextPrimitive) SetParam(key string, value interface{}) {
-	switch strings.ToUpper(key) { // Switch here is temporary workaround. I should use reflect instead.
-	case "SIZE":
-		text.Size = value.(int64)
-	case "WEIGHT":
-		text.Weight = value.(int64)
-	case "STYLE":
-		text.Style = value.(string)
-	case "POSITION":
-		text.Position = value.(string)
-	case "CONTENT":
-		text.Content = value.(string)
+func NewTextPrimitive(params *map[string]interface{}) (TextPrimitive, error) {
+	text := TextPrimitive{}
+	for key, value := range *params {
+		switch strings.ToUpper(key) { // Switch here is temporary workaround. I should use reflect instead.
+		case "SIZE":
+			text.Size = value.(int64)
+		case "WEIGHT":
+			text.Weight = value.(int64)
+		case "STYLE":
+			text.Style = value.(string)
+		case "POSITION":
+			text.Position = value.(string)
+		case "CONTENT":
+			text.Content = value.(string)
+		}
 	}
+
+	return text, nil
 }

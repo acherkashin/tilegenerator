@@ -16,6 +16,7 @@ import (
 )
 
 var db database.GeometryDB
+var styles *map[string]styling.Style
 
 func printStartingMsg(config *settings.Settings) {
 	fmt.Printf("Starting with the following settings:\n")
@@ -26,7 +27,11 @@ func printStartingMsg(config *settings.Settings) {
 }
 
 func getTile(writer http.ResponseWriter, req *http.Request) {
-	var objects []entities.MapObject
+	objects := []entities.MapObject{}
+	/* hardcode for test */
+	o, _ := entities.NewObject(1, "POINT(0 0)")
+	objects = append(objects, *o)
+	/* hardcode for test end*/
 
 	vars := mux.Vars(req)
 	x, errX := strconv.Atoi(vars["x"])
@@ -39,7 +44,7 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 
 	tile := tiles.NewTile(x, y, z)
 	writer.Header().Set("Content-Type", "image/svg+xml")
-	tiles.RenderTile(tile, &objects, writer)
+	tiles.RenderTile(tile, &objects, styles, writer)
 }
 
 func StartApplication(conf *settings.Settings) {
@@ -49,7 +54,7 @@ func StartApplication(conf *settings.Settings) {
 	db.InitConnection(conf.DBInstanceName, conf.DBConnectionString, conf.DBGeometryTable, conf.DBGeometryColumn)
 
 	/* Read styles from file system */
-	styling.GetStyles(conf)
+	styles, _ = styling.GetStyles(conf)
 
 	/* Create router and start listening */
 	router := mux.NewRouter().StrictSlash(true)
