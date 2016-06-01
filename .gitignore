@@ -30,4 +30,4 @@ _testmain.go
 .idea
 tilegenerator
 config.toml
-styles/*
+style-samples/*
