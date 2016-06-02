@@ -20,7 +20,9 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 	for _, object := range *objects {
 		object.Geometry.ConvertCoords(f)
 		for _, style := range *styles {
-			style.Render(&object, canvas)
+			if style.ShouldRender(&object) {
+				style.Render(&object, canvas)
+			}
 		}
 	}
 	canvas.End()

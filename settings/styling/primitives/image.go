@@ -5,7 +5,6 @@ import (
 	"github.com/TerraFactory/wktparser/geometry"
 	"math"
 	"strings"
-	"fmt"
 )
 
 type ImagePrimitive struct {
@@ -16,7 +15,6 @@ type ImagePrimitive struct {
 
 func (img ImagePrimitive) Render(svg *svg.SVG, geo geometry.Geometry) {
 	point, _ := geo.AsPoint()
-	fmt.Println(img.Href)
 	svg.Image(
 		int(math.Floor(point.Coordinates.X + .5)),
 		int(math.Floor(point.Coordinates.Y + 0.5)),

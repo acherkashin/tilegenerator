@@ -19,6 +19,10 @@ type Style struct {
 	Primitives   [] Primitive
 }
 
+func (style *Style) ShouldRender(object *entities.MapObject) bool {
+	return style.GeometryType == object.Geometry.GetType() && style.Name == object.StyleName
+}
+
 func (s *Style) Render(object *entities.MapObject, canvas *svg.SVG) {
 	for _, p := range s.Primitives {
 		p.Render(canvas, object.Geometry)

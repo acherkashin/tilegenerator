@@ -29,8 +29,12 @@ func printStartingMsg(config *settings.Settings) {
 func getTile(writer http.ResponseWriter, req *http.Request) {
 	objects := []entities.MapObject{}
 	/* hardcode for test */
-	o, _ := entities.NewObject(1, "POINT(0 0)")
-	objects = append(objects, *o)
+	o1, _ := entities.NewObject(1, "POINT(0 0)")
+	o1.StyleName = "home"
+	o2, _ := entities.NewObject(2, "POINT(45 45)")
+	o2.StyleName = "mil/airbase"
+	objects = append(objects, *o1)
+	objects = append(objects, *o2)
 	/* hardcode for test end*/
 
 	vars := mux.Vars(req)
