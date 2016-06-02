@@ -20,7 +20,7 @@ type Style struct {
 }
 
 func (s *Style) Render(object *entities.MapObject, canvas *svg.SVG) {
-	for _, p := range s.Primitives{
+	for _, p := range s.Primitives {
 		p.Render(canvas, object.Geometry)
 	}
 }
@@ -30,7 +30,7 @@ func NewPrimitive(t string, params map[string]interface{}) (Primitive, error) {
 	case "TEXT":
 		return primitives.NewTextPrimitive(&params)
 	case "IMAGE":
-		return primitives.ImagePrimitive{}, nil
+		return primitives.NewImagePrimitive(&params)
 	default:
 		return nil, errors.New(fmt.Sprintf("Unknown primitive type %s.", t))
 	}
