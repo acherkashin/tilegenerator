@@ -15,16 +15,19 @@ type ImagePrimitive struct {
 	Width  int64
 	Height int64
 	Href   string
+	Rotate float64
 	bytes  []byte
 }
 
 func (img ImagePrimitive) Render(svg *svg.SVG, geo geometry.Geometry) {
 	point, _ := geo.AsPoint()
 	inlineBase64Img := base64.StdEncoding.EncodeToString(img.bytes)
-	svg.Image(
+	svg.TranslateRotate(
 		int(math.Floor(point.Coordinates.X + .5)),
 		int(math.Floor(point.Coordinates.Y + 0.5)),
-		int(img.Width), int(img.Height), "data:image/png;base64," + inlineBase64Img)
+		img.Rotate)
+	svg.Image(0, 0, int(img.Width), int(img.Height), "data:image/png;base64," + inlineBase64Img)
+	svg.Gend()
 }
 
 func NewImagePrimitive(params *map[string]interface{}) (ImagePrimitive, error) {
@@ -39,6 +42,8 @@ func NewImagePrimitive(params *map[string]interface{}) (ImagePrimitive, error) {
 			img.Href = value.(string)
 			resp, _ := http.Get(img.Href)
 			img.bytes, _ = ioutil.ReadAll(resp.Body) // Must implement reading bytes from files.
+		case "ROTATE":
+			img.Rotate = value.(float64)
 		}
 	}
 
