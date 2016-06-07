@@ -12,9 +12,11 @@ import (
 	"github.com/TerraFactory/tilegenerator/tiles"
 	"github.com/fatih/color"
 	"github.com/gorilla/mux"
+	"github.com/TerraFactory/tilegenerator/settings/styling"
 )
 
 var db database.GeometryDB
+var styles *map[string]styling.Style
 
 func printStartingMsg(config *settings.Settings) {
 	fmt.Printf("Starting with the following settings:\n")
@@ -25,7 +27,15 @@ func printStartingMsg(config *settings.Settings) {
 }
 
 func getTile(writer http.ResponseWriter, req *http.Request) {
-	var objects []entities.MapObject
+	objects := []entities.MapObject{}
+	/* hardcode for test */
+	o1, _ := entities.NewObject(1, "POINT(0 0)")
+	o1.StyleName = "home"
+	o2, _ := entities.NewObject(2, "POINT(45 45)")
+	o2.StyleName = "mil/airbase"
+	objects = append(objects, *o1)
+	objects = append(objects, *o2)
+	/* hardcode for test end*/
 
 	vars := mux.Vars(req)
 	x, errX := strconv.Atoi(vars["x"])
@@ -38,14 +48,21 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 
 	tile := tiles.NewTile(x, y, z)
 	writer.Header().Set("Content-Type", "image/svg+xml")
-	tiles.RenderTile(tile, &objects, writer)
+	tiles.RenderTile(tile, &objects, styles, writer)
 }
 
-func Listen(conf *settings.Settings) {
-	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/tiles/{z}/{x}/{y}.svg", getTile)
+func StartApplication(conf *settings.Settings) {
+	/* connect to DB */
+	/* pool of connections needed here later. */
 	db = database.GeometryDB{}
 	db.InitConnection(conf.DBInstanceName, conf.DBConnectionString, conf.DBGeometryTable, conf.DBGeometryColumn)
+
+	/* Read styles from file system */
+	styles, _ = styling.GetStyles(conf)
+
+	/* Create router and start listening */
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/tiles/{z}/{x}/{y}.svg", getTile)
 	printStartingMsg(conf)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", conf.HTTPPort), router))
 }

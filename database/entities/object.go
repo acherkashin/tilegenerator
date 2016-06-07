@@ -8,6 +8,7 @@ import (
 // MapObject represents a geometry on a map
 type MapObject struct {
 	ID       int
+	StyleName string
 	Geometry geometry.Geometry
 }
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/pelletier/go-toml"
 	"sync"
-"errors"
+	"errors"
 	"github.com/TerraFactory/tilegenerator/utils"
 )
 
@@ -15,6 +15,7 @@ type Settings struct {
 	DBGeometryColumn   string
 	DBInstanceName     string
 	HTTPPort           string
+	StylesDirectory    string
 }
 
 var instance *Settings
@@ -35,6 +36,7 @@ func readSettings(conf_path *string) (*Settings, error) {
 			DBGeometryColumn:   config.Get("database.geometry_column").(string),
 			DBInstanceName:     config.Get("database.instance_name").(string),
 			HTTPPort:           config.Get("http.port").(string),
+			StylesDirectory:    config.Get("styles.directory").(string),
 		}
 	}
 	return &settings, nil

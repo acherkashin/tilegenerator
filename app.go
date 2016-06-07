@@ -25,5 +25,5 @@ func main() {
 		os.Exit(1)
 		return
 	}
-	listeners.Listen(conf)
+	listeners.StartApplication(conf)
 }
