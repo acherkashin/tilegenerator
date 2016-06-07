@@ -43,9 +43,9 @@ type patrollingArea struct {
 	rightArrowXs, rightArrowYs      []int
 }
 
-func newPatrollingArea(tile *mapobjects.Tile, coords []geometry.Coord) *patrollingArea {
-	x1, y1 := tile.Degrees2Pixels(coords[0].Y, coords[0].X)
-	x2, y2 := tile.Degrees2Pixels(coords[1].Y, coords[1].X)
+func newPatrollingArea(tile *mapobjects.Tile, coords []geometry.Coord, firstIndex int) *patrollingArea {
+	x1, y1 := tile.Degrees2Pixels(coords[firstIndex].Y, coords[firstIndex].X)
+	x2, y2 := tile.Degrees2Pixels(coords[firstIndex+1].Y, coords[firstIndex+1].X)
 
 	radiusX := int(distanceBeetweenPoints(x1, y1, x2, y2) / 4)
 	radiusY := int(radiusX / 2)
@@ -272,31 +272,32 @@ func RenderPatrollingArea(canvas *svg.SVG, object *mapobjects.MapObject, tile *m
 	}
 	coords := line.Coordinates
 
-	area := newPatrollingArea(tile, coords)
-	transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
-	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
-	canvas.CSS(prefixSelectors(object.CSS, object.ID))
-	canvas.Gtransform(transformation)
-	canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY)
-	canvas.Polyline(area.rightArrowXs, area.rightArrowYs)
-	canvas.Polyline(area.leftArrowXs, area.leftArrowYs)
-	canvas.Arc(area.rightLinePointX,
-		area.rightLinePointY,
-		area.radiusX,
-		area.radiusY,
-		0, false, true,
-		area.rightLinePointX,
-		area.rightLinePointY+int(2*area.radiusY))
-	canvas.Arc(area.leftLinePointX,
-		area.leftLinePointY,
-		area.radiusX,
-		area.radiusY,
-		0, false, true,
-		area.leftLinePointX,
-		area.leftLinePointY-int(2*area.radiusY))
-	canvas.Gend()
-	canvas.Gend()
-
+	for i := 0; i < len(coords)-1; i++ {
+		area := newPatrollingArea(tile, coords, i)
+		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
+		canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
+		canvas.CSS(prefixSelectors(object.CSS, object.ID))
+		canvas.Gtransform(transformation)
+		canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY)
+		canvas.Polyline(area.rightArrowXs, area.rightArrowYs)
+		canvas.Polyline(area.leftArrowXs, area.leftArrowYs)
+		canvas.Arc(area.rightLinePointX,
+			area.rightLinePointY,
+			area.radiusX,
+			area.radiusY,
+			0, false, true,
+			area.rightLinePointX,
+			area.rightLinePointY+int(2*area.radiusY))
+		canvas.Arc(area.leftLinePointX,
+			area.leftLinePointY,
+			area.radiusX,
+			area.radiusY,
+			0, false, true,
+			area.leftLinePointX,
+			area.leftLinePointY-int(2*area.radiusY))
+		canvas.Gend()
+		canvas.Gend()
+	}
 	return nil
 }
 
@@ -336,6 +337,54 @@ func RenderBeamDiagram(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapo
 	return nil
 }
 
+// // RenderRouteAviationFlight renders an aviation route on a tile
+// func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
+// 	line, err := object.Geometry.AsLineString()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	coords := line.Coordinates
+
+// 	route := newRouteAviationFlight(tile, coords)
+// 	weight := 1
+// 	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
+// 	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
+// 	transformation := fmt.Sprintf("rotate(%v,%v,%v)", route.rotateAngel, route.centerX, route.centerY)
+
+// 	canvas.Group(fmt.Sprintf("id=\"id%v\"  transform=\"%v\"", strconv.Itoa(object.ID), transformation))
+// 	canvas.CSS(prefixSelectors(object.CSS, object.ID))
+// 	canvas.Line(route.rightLinePointX, route.centerY, route.leftLinePointX, route.centerY, style)
+// 	canvas.Polyline(route.arrowXs, route.arrowYs, styleArrow)
+// 	canvas.Gend()
+
+// 	return nil
+// }
+
+func GetArrowPoints(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
+	var angel int
+	var centerX, centerY, rotatedPointX, rotatedPointY int
+
+	percentSize := 0.95 + 0.0019999*(float64)(zoom)
+	angel = 120
+	centerX = BeginX + (int)((float64)(EndX-BeginX)*percentSize)
+	centerY = BeginY + (int)((float64)(EndY-BeginY)*percentSize)
+	rotatedPointX = EndX
+	rotatedPointY = EndY
+
+	p1X, p1Y := RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, angel)
+	p2X, p2Y := RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, -angel)
+
+	xs := []int{rotatedPointX, p1X, centerX, p2X}
+	ys := []int{rotatedPointY, p1Y, centerY, p2Y}
+	return xs, ys
+}
+
+func RotatePoint(centerX, centerY, pointX, pointY, angel int) (x, y int) {
+	x = centerX + (int)((float64)(pointX-centerX)*math.Cos((float64)(angel)*math.Pi/180)) - (int)((float64)(pointY-centerY)*math.Sin((float64)(angel)/180*math.Pi))
+	y = centerY + (int)((float64)(pointX-centerX)*math.Sin((float64)(angel)*math.Pi/180)) + (int)((float64)(pointY-centerY)*math.Cos((float64)(angel)/180*math.Pi))
+	return x, y
+}
+
 // RenderRouteAviationFlight renders an aviation route on a tile
 func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
 	line, err := object.Geometry.AsLineString()
@@ -343,19 +392,22 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, ti
 		return err
 	}
 	coords := line.Coordinates
-
-	route := newRouteAviationFlight(tile, coords)
 	weight := 1
 	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
-	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
-	transformation := fmt.Sprintf("rotate(%v,%v,%v)", route.rotateAngel, route.centerX, route.centerY)
+	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: black;", weight)
+	canvas.Group()
 
-	canvas.Group(fmt.Sprintf("id=\"id%v\"  transform=\"%v\"", strconv.Itoa(object.ID), transformation))
-	canvas.CSS(prefixSelectors(object.CSS, object.ID))
-	canvas.Line(route.rightLinePointX, route.centerY, route.leftLinePointX, route.centerY, style)
-	canvas.Polyline(route.arrowXs, route.arrowYs, styleArrow)
+	var x1, y1, x2, y2 int
+
+	for i := 0; i < len(coords)-1; i++ {
+		x1, y1 = tile.Degrees2Pixels(coords[i].Y, coords[i].X)
+		x2, y2 = tile.Degrees2Pixels(coords[i+1].Y, coords[i+1].X)
+		canvas.Line(x1, y1, x2, y2, style)
+		xs, ys := GetArrowPoints(x1, y1, x2, y2, tile.Z)
+		canvas.Polygon(xs, ys, styleArrow)
+	}
+
 	canvas.Gend()
-
 	return nil
 }
 
