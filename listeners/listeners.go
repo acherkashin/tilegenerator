@@ -28,31 +28,25 @@ func printStartingMsg(config *settings.Settings) {
 
 func getTile(writer http.ResponseWriter, req *http.Request) {
 	objects := []entities.MapObject{}
-	/* hardcode for test */
-	o1, err1 := entities.NewObject(1, "POINT (0 0)")
-	o2, err2 := entities.NewObject(2, "POINT (10 10)")
-	if err1 == nil && err2 == nil {
-		o1.StyleName = "home"
-		o2.StyleName = "mil/airbase"
-		objects = append(objects, *o1)
-		objects = append(objects, *o2)
-		/* hardcode for test end*/
-
-		vars := mux.Vars(req)
-		x, errX := strconv.Atoi(vars["x"])
-		y, errY := strconv.Atoi(vars["y"])
-		z, errZ := strconv.Atoi(vars["z"])
-		if errX != nil || errY != nil || errZ != nil {
-			writer.WriteHeader(400)
-			return
+	dbMapsObjects, dbErr := db.GetAllGeometries()
+	if dbErr == nil {
+		for _, obj := range dbMapsObjects {
+			obj.StyleName = "home"
+			objects = append(objects, obj)
 		}
-
-		tile := tiles.NewTile(x, y, z)
-		writer.Header().Set("Content-Type", "image/svg+xml")
-		tiles.RenderTile(tile, &objects, styles, writer)
-	} else {
-		writer.WriteHeader(400)
 	}
+	vars := mux.Vars(req)
+	x, errX := strconv.Atoi(vars["x"])
+	y, errY := strconv.Atoi(vars["y"])
+	z, errZ := strconv.Atoi(vars["z"])
+	if errX != nil || errY != nil || errZ != nil {
+		writer.WriteHeader(400)
+		return
+	}
+
+	tile := tiles.NewTile(x, y, z)
+	writer.Header().Set("Content-Type", "image/svg+xml")
+	tiles.RenderTile(tile, &objects, styles, writer)
 }
 
 func StartApplication(conf *settings.Settings) {
