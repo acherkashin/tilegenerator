@@ -8,9 +8,9 @@ import (
 
 	"github.com/TerraFactory/tilegenerator/settings"
 	"github.com/TerraFactory/tilegenerator/utils"
+	"github.com/TerraFactory/wktparser/geometry"
 	"github.com/pelletier/go-toml"
 	"strings"
-	"github.com/TerraFactory/wktparser/geometry"
 )
 
 var styles *map[string]Style
@@ -62,8 +62,9 @@ func readStylesDirectory(directory string) (*map[string]Style, []error) {
 	result := map[string]Style{}
 	allErrors := []error{}
 
+	fmt.Println(directory)
 	if utils.IsDirectory(directory) {
-		return nil, []error{errors.New(fmt.Sprint("Path %s is not a directory", directory))}
+		return nil, []error{fmt.Errorf("Path %s is not a directory", directory)}
 	}
 	files, err := ioutil.ReadDir(directory)
 	if err != nil {
