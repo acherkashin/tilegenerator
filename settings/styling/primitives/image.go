@@ -32,7 +32,7 @@ func (img ImagePrimitive) Render(svg *svg.SVG, geo geometry.Geometry, object *en
 			int(math.Floor(point.Coordinates.X+.5)),
 			int(math.Floor(point.Coordinates.Y+0.5)),
 			img.Rotate)
-		svg.Image(0, 0, int(img.Width), int(img.Height), "data:"+img.Format+";base64,"+inlineBase64Img)
+		svg.Image(-int(img.Width)/2, -int(img.Height)/2, int(img.Width), int(img.Height), "data:"+img.Format+";base64,"+inlineBase64Img)
 		svg.Gend()
 	} else {
 		fmt.Errorf("Can't render %s because of err: '%s'", resultHref, err.Error())
