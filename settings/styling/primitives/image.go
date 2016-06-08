@@ -24,9 +24,6 @@ type ImagePrimitive struct {
 
 func (img ImagePrimitive) Render(svg *svg.SVG, geo geometry.Geometry, object *entities.MapObject) {
 	point, _ := geo.AsPoint()
-	if object.ID == 1750 {
-		fmt.Println(object)
-	}
 	resultHref := strings.Replace(img.Href, "${ID}", strconv.Itoa(object.ID), 1)
 	if result, err := utils.GetImgByURL(resultHref); err == nil {
 		img.bytes = result
