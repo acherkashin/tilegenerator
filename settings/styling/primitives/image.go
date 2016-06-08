@@ -2,10 +2,12 @@ package primitives
 
 import (
 	"math"
+	"strconv"
 	"strings"
 
 	"encoding/base64"
 	"github.com/TerraFactory/svgo"
+	"github.com/TerraFactory/tilegenerator/database/entities"
 	"github.com/TerraFactory/tilegenerator/utils"
 	"github.com/TerraFactory/wktparser/geometry"
 )
@@ -18,9 +20,9 @@ type ImagePrimitive struct {
 	bytes  []byte
 }
 
-func (img ImagePrimitive) Render(svg *svg.SVG, geo geometry.Geometry) {
+func (img ImagePrimitive) Render(svg *svg.SVG, geo geometry.Geometry, object *entities.MapObject) {
 	point, _ := geo.AsPoint()
-	resultHref := strings.Replace(img.Href, "${ID}", "1883", 1)
+	resultHref := strings.Replace(img.Href, "${ID}", strconv.Itoa(object.ID), 1)
 	img.bytes, _ = utils.GetImgByURL(resultHref)
 	inlineBase64Img := base64.StdEncoding.EncodeToString(img.bytes)
 	svg.TranslateRotate(

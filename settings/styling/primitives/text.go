@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/TerraFactory/svgo"
+	"github.com/TerraFactory/tilegenerator/database/entities"
 	"github.com/TerraFactory/wktparser/geometry"
 )
 
@@ -16,11 +17,11 @@ type TextPrimitive struct {
 	Content  string
 }
 
-func (text TextPrimitive) Render(svg *svg.SVG, geo geometry.Geometry) {
+func (text TextPrimitive) Render(svg *svg.SVG, geo geometry.Geometry, object *entities.MapObject) {
 	point, _ := geo.AsPoint()
 	svg.Text(
-		int(math.Floor(point.Coordinates.X + .5)),
-		int(math.Floor(point.Coordinates.Y + .5)),
+		int(math.Floor(point.Coordinates.X+.5)),
+		int(math.Floor(point.Coordinates.Y+.5)),
 		text.Content)
 }
 
