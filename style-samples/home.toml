@@ -11,6 +11,7 @@ Name = "home"
 
 [[primitives]]
     Type = "IMAGE"
+    Format = "img/png"
     Width = 24
     Height = 24
     Href = "https://openclipart.org/image/300px/svg_to_png/19535/dynnamitt-home.png"

@@ -13,8 +13,12 @@ func GetImgByURL(url string) ([]byte, error) {
 		return val, nil
 	} else {
 		if resp, err := http.Get(url); err == nil {
-			loadedImages[url], _ = ioutil.ReadAll(resp.Body)
-			return loadedImages[url], nil
+			if result, readErr := ioutil.ReadAll(resp.Body); readErr == nil {
+				loadedImages[url] = result
+				return result, nil
+			} else {
+				return nil, errors.New("Can't read bytes from image loading response")
+			}
 		} else {
 			return nil, errors.New("Can't load img")
 		}

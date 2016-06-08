@@ -17,6 +17,7 @@ type ImagePrimitive struct {
 	Height int64
 	Href   string
 	Rotate float64
+	Format string
 	bytes  []byte
 }
 
@@ -29,7 +30,7 @@ func (img ImagePrimitive) Render(svg *svg.SVG, geo geometry.Geometry, object *en
 		int(math.Floor(point.Coordinates.X+.5)),
 		int(math.Floor(point.Coordinates.Y+0.5)),
 		img.Rotate)
-	svg.Image(0, 0, int(img.Width), int(img.Height), "data:image/svg+xml;base64,"+inlineBase64Img)
+	svg.Image(0, 0, int(img.Width), int(img.Height), "data:"+img.Format+";base64,"+inlineBase64Img)
 	svg.Gend()
 }
 
@@ -45,6 +46,8 @@ func NewImagePrimitive(params *map[string]interface{}) (ImagePrimitive, error) {
 			img.Href = value.(string)
 		case "ROTATE":
 			img.Rotate = value.(float64)
+		case "FORMAT":
+			img.Format = value.(string)
 		}
 	}
 
