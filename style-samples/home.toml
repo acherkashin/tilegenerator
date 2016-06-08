@@ -1,0 +1,16 @@
+GeometryType = "POINT"
+Name = "home"
+
+[[primitives]]
+    Type = "TEXT"
+    Position = "top"
+    Weight = 700
+    Style = "cursive"
+    Size = 20
+    Content = "Home, Sweet Home!"
+
+[[primitives]]
+    Type = "IMAGE"
+    Width = 24
+    Height = 24
+    Href = "https://openclipart.org/download/19535/dynnamitt-home.svg"

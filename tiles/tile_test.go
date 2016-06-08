@@ -1,4 +1,4 @@
-package mapobjects
+package tiles
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -30,11 +30,11 @@ func TestTile_Contains(t *testing.T) {
 func TestTile_Degrees2Pixels(t *testing.T) {
 	tile := NewTile(0, 0, 0)
 	x, y := tile.Degrees2Pixels(0, 0)
-	assert.Equal(t, TILE_SIZE/2, x, "point with (0,0) coords should be exactly in the center of whole world tile")
-	assert.Equal(t, TILE_SIZE/2, y, "point with (0,0) coords should be exactly in the center of whole world tile")
+	assert.Equal(t, TileSize/2, x, "point with (0,0) coords should be exactly in the center of whole world tile")
+	assert.Equal(t, TileSize/2, y, "point with (0,0) coords should be exactly in the center of whole world tile")
 
 	tile = NewTile(1, 0, 1)
 	x, y = tile.Degrees2Pixels(0, 0)
 	assert.Equal(t, 0, x, "point with (0,0) coords should be exactly in the center of whole world tile")
-	assert.Equal(t, TILE_SIZE, y, "point with (0,0) coords should be exactly in the center of whole world tile")
+	assert.Equal(t, TileSize, y, "point with (0,0) coords should be exactly in the center of whole world tile")
 }

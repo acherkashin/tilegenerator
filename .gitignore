@@ -22,9 +22,13 @@ _testmain.go
 *.exe
 *.test
 *.prof
+app
 
 # Mac OS X
 .DS_Store
 
 # Idea
 .idea
+tilegenerator
+config.toml
+style-samples/*
