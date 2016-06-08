@@ -13,4 +13,5 @@ Name = "home"
     Type = "IMAGE"
     Width = 24
     Height = 24
-    Href = "https://openclipart.org/download/19535/dynnamitt-home.svg"
+    Href = "https://openclipart.org/image/300px/svg_to_png/19535/dynnamitt-home.png"
+    Rotate = 90.0
