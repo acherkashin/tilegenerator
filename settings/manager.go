@@ -1,11 +1,11 @@
 package settings
 
 import (
+	"errors"
 	"fmt"
+	"github.com/TerraFactory/tilegenerator/utils"
 	"github.com/pelletier/go-toml"
 	"sync"
-	"errors"
-	"github.com/TerraFactory/tilegenerator/utils"
 )
 
 // Settings is a singleton object, which contains configuration of a tile server
@@ -47,7 +47,7 @@ func readSettings(conf_path *string) (*Settings, error) {
 func GetSettings(conf_path *string) (*Settings, error) {
 	var err error
 	once.Do(func() {
-		instance, err= readSettings(conf_path)
+		instance, err = readSettings(conf_path)
 	})
 	return instance, err
 }

@@ -63,5 +63,4 @@ func (gdb *GeometryDB) GetAllGeometries() (mapObjects []entities.MapObject, err 
 		fmt.Printf("Query error: %v", err)
 		return nil, err
 	}
-	return mapObjects, nil
 }
