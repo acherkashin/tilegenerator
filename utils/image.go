@@ -4,11 +4,15 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"sync"
 )
 
 var loadedImages = make(map[string][]byte)
+var lock sync.Mutex
 
 func GetImgByURL(url string) ([]byte, error) {
+	lock.Lock()
+	defer lock.Unlock()
 	if val, ok := loadedImages[url]; ok {
 		return val, nil
 	} else {
