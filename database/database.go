@@ -64,3 +64,15 @@ func (gdb *GeometryDB) GetAllGeometries() (mapObjects []entities.MapObject, err 
 		return nil, err
 	}
 }
+
+// func (gdb *GeometryDB) GetAllSpecialObject() (mapObjects []entities.MapObject, err error) {
+// 	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id BETWEEN 149 AND 165;", gdb.geomcol, gdb.geomtable)
+// 	rows, err := gdb.conn.Query(q)
+// 	if err == nil {
+// 		mapObjects, scanErr := gdb.rowsToMapObjects(rows)
+// 		return mapObjects, scanErr
+// 	} else {
+// 		fmt.Printf("Query error: %v", err)
+// 		return nil, err
+// 	}
+// }

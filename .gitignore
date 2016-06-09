@@ -32,3 +32,5 @@ app
 tilegenerator
 config.toml
 style-samples/*
+.vscode/
+debug
