@@ -26,7 +26,10 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 		for _, style := range *styles {
 			if style.ShouldRender(&object) {
 				style.Render(&object, canvas)
-
+			} else if object.TypeID == 47 {
+				RenderPatrollingArea(canvas, &object, tile)
+			} else if object.TypeID == 74 {
+				RenderRouteAviationFlight(canvas, &object, tile)
 			}
 		}
 	}
@@ -246,12 +249,15 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 		return err
 	}
 	coords := line.Coordinates
-
+	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
+	canvas.CSS(`line, path {
+			fill: none;
+			stroke: black;
+			}`)
 	for i := 0; i < len(coords)-1; i++ {
 		area := newPatrollingArea(tile, coords, i)
 		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
-		canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
-		// canvas.CSS(prefixSelectors(object.CSS, object.ID))
+
 		canvas.Gtransform(transformation)
 		canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY)
 		canvas.Polyline(area.rightArrowXs, area.rightArrowYs)
@@ -270,9 +276,10 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 			0, false, true,
 			area.leftLinePointX,
 			area.leftLinePointY-int(2*area.radiusY))
-		canvas.Gend()
-		// canvas.Gend()
+
 	}
+	canvas.Gend()
+	canvas.Gend()
 	return nil
 }
 

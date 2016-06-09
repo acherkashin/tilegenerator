@@ -25,10 +25,11 @@ func (gdb *GeometryDB) rowsToMapObjects(rows *sql.Rows) ([]entities.MapObject, e
 
 	for tmpRows.Next() {
 		var ID int
+		var typeID int
 		var wkt string
-		err := tmpRows.Scan(&ID, &wkt)
+		err := tmpRows.Scan(&ID, &typeID, &wkt)
 		if err == nil {
-			mapObj, mapObjErr := entities.NewObject(ID, wkt)
+			mapObj, mapObjErr := entities.NewObject(ID, typeID, wkt)
 			if mapObjErr == nil {
 				mapObjects = append(mapObjects, *mapObj)
 			} else {
@@ -57,7 +58,7 @@ func (gdb *GeometryDB) InitConnection(username string, connstring string, geomta
 func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile) (mapObjects []entities.MapObject, err error) {
 	q := fmt.Sprintf(`
 
-		SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s
+		SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s
 		where type_id not in (170, 11) and
 		ST_Contains(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom);
 		
@@ -73,14 +74,14 @@ func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile) (mapObjects []enti
 	}
 }
 
-// func (gdb *GeometryDB) GetAllSpecialObject() (mapObjects []entities.MapObject, err error) {
-// 	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id BETWEEN 149 AND 165;", gdb.geomcol, gdb.geomtable)
-// 	rows, err := gdb.conn.Query(q)
-// 	if err == nil {
-// 		mapObjects, scanErr := gdb.rowsToMapObjects(rows)
-// 		return mapObjects, scanErr
-// 	} else {
-// 		fmt.Printf("Query error: %v", err)
-// 		return nil, err
-// 	}
-// }
+func (gdb *GeometryDB) GetAllSpecialObject() (mapObjects []entities.MapObject, err error) {
+	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id BETWEEN 149 AND 165;", gdb.geomcol, gdb.geomtable)
+	rows, err := gdb.conn.Query(q)
+	if err == nil {
+		mapObjects, scanErr := gdb.rowsToMapObjects(rows)
+		return mapObjects, scanErr
+	} else {
+		fmt.Printf("Query error: %v", err)
+		return nil, err
+	}
+}
