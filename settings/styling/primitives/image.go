@@ -35,7 +35,7 @@ func (img ImagePrimitive) Render(svg *svg.SVG, geo geometry.Geometry, object *en
 		svg.Image(-int(img.Width)/2, -int(img.Height)/2, int(img.Width), int(img.Height), "data:"+img.Format+";base64,"+inlineBase64Img)
 		svg.Gend()
 	} else {
-		fmt.Errorf("Can't render %s because of err: '%s'", resultHref, err.Error())
+		fmt.Printf("Can't render %s because of err: '%s'", resultHref, err.Error())
 	}
 }
 
