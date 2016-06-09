@@ -58,8 +58,7 @@ func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile) (mapObjects []enti
 	q := fmt.Sprintf(`
 
 		SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s
-		where type_id <> 170 and
-		where type_id <> 11 and
+		where type_id not in (170, 11) 
 		ST_Contains(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom);
 		
 		`, gdb.geomcol, gdb.geomtable, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South)
