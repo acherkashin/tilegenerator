@@ -28,13 +28,6 @@ func printStartingMsg(config *settings.Settings) {
 
 func getTile(writer http.ResponseWriter, req *http.Request) {
 	objects := []entities.MapObject{}
-	dbMapsObjects, dbErr := db.GetAllGeometries()
-	if dbErr == nil {
-		for _, obj := range dbMapsObjects {
-			obj.StyleName = "home"
-			objects = append(objects, obj)
-		}
-	}
 	vars := mux.Vars(req)
 	x, errX := strconv.Atoi(vars["x"])
 	y, errY := strconv.Atoi(vars["y"])
@@ -45,6 +38,14 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	tile := tiles.NewTile(x, y, z)
+
+	dbMapsObjects, dbErr := db.GetGeometriesForTile(tile)
+	if dbErr == nil {
+		for _, obj := range dbMapsObjects {
+			obj.StyleName = "home"
+			objects = append(objects, obj)
+		}
+	}
 	writer.Header().Set("Content-Type", "image/svg+xml")
 	tiles.RenderTile(tile, &objects, styles, writer)
 }

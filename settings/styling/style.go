@@ -1,22 +1,22 @@
 package styling
 
 import (
-	"github.com/TerraFactory/svgo"
-	"github.com/TerraFactory/wktparser/geometry"
 	"errors"
 	"fmt"
-	"github.com/TerraFactory/tilegenerator/settings/styling/primitives"
+	"github.com/TerraFactory/svgo"
 	"github.com/TerraFactory/tilegenerator/database/entities"
+	"github.com/TerraFactory/tilegenerator/settings/styling/primitives"
+	"github.com/TerraFactory/wktparser/geometry"
 )
 
 type Primitive interface {
-	Render(svg *svg.SVG, geo geometry.Geometry)
+	Render(svg *svg.SVG, geo geometry.Geometry, object *entities.MapObject)
 }
 
 type Style struct {
 	GeometryType int
 	Name         string
-	Primitives   [] Primitive
+	Primitives   []Primitive
 }
 
 func (style *Style) ShouldRender(object *entities.MapObject) bool {
@@ -25,7 +25,7 @@ func (style *Style) ShouldRender(object *entities.MapObject) bool {
 
 func (s *Style) Render(object *entities.MapObject, canvas *svg.SVG) {
 	for _, p := range s.Primitives {
-		p.Render(canvas, object.Geometry)
+		p.Render(canvas, object.Geometry, object)
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/TerraFactory/tilegenerator/database/entities"
+	"github.com/TerraFactory/tilegenerator/tiles"
 	_ "github.com/lib/pq" //we want to use blank import here
 )
 
@@ -53,8 +54,15 @@ func (gdb *GeometryDB) InitConnection(username string, connstring string, geomta
 }
 
 // Return slice of all geometries in a database
-func (gdb *GeometryDB) GetAllGeometries() (mapObjects []entities.MapObject, err error) {
-	q := fmt.Sprintf("SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s;", gdb.geomcol, gdb.geomtable)
+func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile) (mapObjects []entities.MapObject, err error) {
+	q := fmt.Sprintf(`
+
+		SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s
+		where type_id not in (170, 11) 
+		ST_Contains(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom);
+		
+		`, gdb.geomcol, gdb.geomtable, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South)
+
 	rows, err := gdb.conn.Query(q)
 	if err == nil {
 		mapObjects, scanErr := gdb.rowsToMapObjects(rows)
