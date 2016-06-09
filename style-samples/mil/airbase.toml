@@ -1,0 +1,15 @@
+GeometryType = "POINT"
+Name = "mil/airbase"
+
+[[primitives]]
+    Type = "TEXT"
+    Weight = 700
+    Style = "cursive"
+    Size = 20
+    Content = "Military airbase"
+
+[[primitives]]
+    Type = "IMAGE"
+    Width = 24
+    Height = 24
+    Href = "https://openclipart.org/image/300px/svg_to_png/248175/paper-plane-3.png"

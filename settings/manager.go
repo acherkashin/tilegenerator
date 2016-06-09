@@ -1,7 +1,9 @@
 package settings
 
 import (
+	"errors"
 	"fmt"
+	"github.com/TerraFactory/tilegenerator/utils"
 	"github.com/pelletier/go-toml"
 	"sync"
 )
@@ -13,16 +15,20 @@ type Settings struct {
 	DBGeometryColumn   string
 	DBInstanceName     string
 	HTTPPort           string
+	StylesDirectory    string
 }
 
 var instance *Settings
 var once sync.Once
 
-func readSettings() *Settings {
+func readSettings(conf_path *string) (*Settings, error) {
 	var settings Settings
-	config, err := toml.LoadFile("./config.toml")
+	if !utils.FileExists(conf_path) {
+		return nil, errors.New(fmt.Sprintf("Error. File %s does not exist.", *conf_path))
+	}
+	config, err := toml.LoadFile(*conf_path)
 	if err != nil {
-		fmt.Println("Error ", err.Error())
+		return nil, err
 	} else {
 		settings = Settings{
 			DBConnectionString: config.Get("database.connection_string").(string),
@@ -30,16 +36,18 @@ func readSettings() *Settings {
 			DBGeometryColumn:   config.Get("database.geometry_column").(string),
 			DBInstanceName:     config.Get("database.instance_name").(string),
 			HTTPPort:           config.Get("http.port").(string),
+			StylesDirectory:    config.Get("styles.directory").(string),
 		}
 	}
-	return &settings
+	return &settings, nil
 }
 
 // GetSettings returns single instance of the Settings structure.
 // By default it reads configuration from "config.toml" file
-func GetSettings() *Settings {
+func GetSettings(conf_path *string) (*Settings, error) {
+	var err error
 	once.Do(func() {
-		instance = readSettings()
+		instance, err = readSettings(conf_path)
 	})
-	return instance
+	return instance, err
 }

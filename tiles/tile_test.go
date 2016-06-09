@@ -1,4 +1,4 @@
-package mapobjects
+package tiles
 
 import (
 	"github.com/stretchr/testify/assert"

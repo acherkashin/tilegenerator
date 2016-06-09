@@ -337,28 +337,28 @@ func RenderBeamDiagram(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapo
 	return nil
 }
 
-// // RenderRouteAviationFlight renders an aviation route on a tile
-// func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
-// 	line, err := object.Geometry.AsLineString()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	coords := line.Coordinates
+// RenderRouteAviationFlight renders an aviation route on a tile
+func RenderRouteAviationFlight(canvas *svg.SVG, object *mapobjects.MapObject, tile *mapobjects.Tile) error {
+	line, err := object.Geometry.AsLineString()
+	if err != nil {
+		return err
+	}
+	coords := line.Coordinates
 
-// 	route := newRouteAviationFlight(tile, coords)
-// 	weight := 1
-// 	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
-// 	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
-// 	transformation := fmt.Sprintf("rotate(%v,%v,%v)", route.rotateAngel, route.centerX, route.centerY)
+	route := newRouteAviationFlight(tile, coords)
+	weight := 1
+	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
+	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
+	transformation := fmt.Sprintf("rotate(%v,%v,%v)", route.rotateAngel, route.centerX, route.centerY)
 
-// 	canvas.Group(fmt.Sprintf("id=\"id%v\"  transform=\"%v\"", strconv.Itoa(object.ID), transformation))
-// 	canvas.CSS(prefixSelectors(object.CSS, object.ID))
-// 	canvas.Line(route.rightLinePointX, route.centerY, route.leftLinePointX, route.centerY, style)
-// 	canvas.Polyline(route.arrowXs, route.arrowYs, styleArrow)
-// 	canvas.Gend()
+	canvas.Group(fmt.Sprintf("id=\"id%v\"  transform=\"%v\"", strconv.Itoa(object.ID), transformation))
+	canvas.CSS(prefixSelectors(object.CSS, object.ID))
+	canvas.Line(route.rightLinePointX, route.centerY, route.leftLinePointX, route.centerY, style)
+	canvas.Polyline(route.arrowXs, route.arrowYs, styleArrow)
+	canvas.Gend()
 
-// 	return nil
-// }
+	return nil
+}
 
 func GetArrowPoints(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
 	var angel int
