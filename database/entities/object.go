@@ -10,6 +10,9 @@ import (
 type MapObject struct {
 	ID        int
 	StyleName string
+	Label     string
+	Position  string
+	Size      int
 	Geometry  geometry.Geometry
 }
 

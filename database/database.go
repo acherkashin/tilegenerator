@@ -26,10 +26,12 @@ func (gdb *GeometryDB) rowsToMapObjects(rows *sql.Rows) ([]entities.MapObject, e
 	for tmpRows.Next() {
 		var ID int
 		var wkt string
-		err := tmpRows.Scan(&ID, &wkt)
+		var label string
+		err := tmpRows.Scan(&ID, &wkt, &label)
 		if err == nil {
 			mapObj, mapObjErr := entities.NewObject(ID, wkt)
 			if mapObjErr == nil {
+				mapObj.Label = label
 				mapObjects = append(mapObjects, *mapObj)
 			} else {
 				fmt.Println(errors.New("Can't create map object"))
@@ -57,7 +59,7 @@ func (gdb *GeometryDB) InitConnection(username string, connstring string, geomta
 func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile) (mapObjects []entities.MapObject, err error) {
 	q := fmt.Sprintf(`
 
-		SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s
+		SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ), coalesce(text1, '') from %s
 		where type_id not in (170, 11) and 
 		(min_zoom <= %v or min_zoom is null) and
 		(max_zoom >= %v or max_zoom is null) and
