@@ -49,7 +49,7 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 	specialObjects, err := db.GetAllSpecialObject()
 	if err == nil {
 		for _, obj := range specialObjects {
-			obj.StyleName = "home"
+			// obj.StyleName = "home"
 			objects = append(objects, obj)
 		}
 	}

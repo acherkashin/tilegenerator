@@ -57,7 +57,6 @@ func (gdb *GeometryDB) InitConnection(username string, connstring string, geomta
 // Return slice of all geometries in a database
 func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile) (mapObjects []entities.MapObject, err error) {
 	q := fmt.Sprintf(`
-
 		SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s
 		where type_id not in (170, 11) and
 		ST_Contains(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom);
@@ -75,7 +74,7 @@ func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile) (mapObjects []enti
 }
 
 func (gdb *GeometryDB) GetAllSpecialObject() (mapObjects []entities.MapObject, err error) {
-	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE type_id BETWEEN 149 AND 165;", gdb.geomcol, gdb.geomtable)
+	q := fmt.Sprintf("SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s WHERE (type_id BETWEEN 149 AND 165) OR (type_id IN (47,74));", gdb.geomcol, gdb.geomtable)
 	rows, err := gdb.conn.Query(q)
 	if err == nil {
 		mapObjects, scanErr := gdb.rowsToMapObjects(rows)

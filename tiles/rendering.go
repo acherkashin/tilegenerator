@@ -276,9 +276,8 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 			0, false, true,
 			area.leftLinePointX,
 			area.leftLinePointY-int(2*area.radiusY))
-
+		canvas.Gend()
 	}
-	canvas.Gend()
 	canvas.Gend()
 	return nil
 }
@@ -333,8 +332,8 @@ func GetArrowPoints(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
 	p1X, p1Y := RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, angel)
 	p2X, p2Y := RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, -angel)
 
-	xs := []int{rotatedPointX, p1X, centerX, p2X}
-	ys := []int{rotatedPointY, p1Y, centerY, p2Y}
+	xs := []int{p1X, rotatedPointX, p2X}
+	ys := []int{p1Y, rotatedPointY, p2Y}
 	return xs, ys
 }
 
@@ -353,7 +352,7 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	coords := line.Coordinates
 	weight := 1
 	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
-	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: black;", weight)
+	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
 	canvas.Group()
 
 	var x1, y1, x2, y2 int
@@ -363,7 +362,7 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 		x2, y2 = tile.Degrees2Pixels(coords[i+1].Y, coords[i+1].X)
 		canvas.Line(x1, y1, x2, y2, style)
 		xs, ys := GetArrowPoints(x1, y1, x2, y2, tile.Z)
-		canvas.Polygon(xs, ys, styleArrow)
+		canvas.Polyline(xs, ys, styleArrow)
 	}
 
 	canvas.Gend()
