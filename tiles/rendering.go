@@ -257,18 +257,18 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 			stroke: black;
 			}`)
 
-	fullLength := getLengthPolyline(coords, tile) / 2
-	alreadyDrawn := false
+	// fullLength := getLengthPolyline(coords, tile) / 2
+	// alreadyDrawn := false
 
 	for i := 0; i < len(coords)-1; i++ {
 
 		area := newPatrollingArea(tile, coords, i)
-		lineLength := getLineLength(tile, &coords[i], &coords[i+1])
-		fullLength -= lineLength
-		if fullLength <= 0 && !alreadyDrawn {
-			renderImageOnPatrollingArea(canvas, object, area, tile.Z)
-			alreadyDrawn = true
-		}
+		// lineLength := getLineLength(tile, &coords[i], &coords[i+1])
+		// fullLength -= lineLength
+		// if fullLength <= 0 && !alreadyDrawn {
+		renderImageOnPatrollingArea(canvas, object, area, tile.Z)
+		// 	alreadyDrawn = true
+		// }
 
 		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
 
@@ -302,8 +302,8 @@ func getLineLength(tile *Tile, coord1 *geometry.Coord, coord2 *geometry.Coord) f
 
 	return lineLength
 }
-func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, zoom int) {
 
+func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, zoom int) {
 	bytesImg, err := utils.GetImgFromFile(fmt.Sprintf("images\\%v.png", object.TypeID))
 
 	if err == nil {
@@ -320,6 +320,29 @@ func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, ar
 			(int)(imageHeight),
 			img2html,
 			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", area.rotateAngel+90, area.centerX, area.centerY))
+
+	}
+}
+
+func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1, y1, x2, y2, zoom int) {
+	bytesImg, err := utils.GetImgFromFile(fmt.Sprintf("images\\%v.png", object.TypeID))
+
+	if err == nil {
+		imgBase64Str := base64.StdEncoding.EncodeToString(bytesImg)
+
+		img2html := "data:image/png;base64," + imgBase64Str
+
+		imageWidth := 5 + 4*zoom
+		imageHeight := 7 + 5*zoom
+		angel := getAngel(x1, y1, x2, y2)
+		centerX, centerY := getLineCenter(x1, y1, x2, y2)
+
+		canvas.Image(centerX-(int)(imageWidth/2.0),
+			centerY-(int)(imageHeight/2.0),
+			(int)(imageWidth),
+			(int)(imageHeight),
+			img2html,
+			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel+90, centerX, centerY))
 
 	}
 }
@@ -417,6 +440,7 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 		canvas.Line(x1, y1, x2, y2, style)
 		xs, ys := GetArrowPoints(x1, y1, x2, y2, tile.Z)
 		canvas.Polyline(xs, ys, styleArrow)
+		renderImageOnRouteAviation(canvas, object, x1, y1, x2, y2, tile.Z)
 	}
 
 	canvas.Gend()
@@ -455,142 +479,3 @@ func RenderSatelliteVisibility(canvas *svg.SVG, object *entities.MapObject, radi
 
 	return nil
 }
-
-// func RenderSatellite(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
-// 	point, err := object.Geometry.AsPoint()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	coord := point.Coordinates
-// 	centerX, centerY := tile.Degrees2Pixels(coord.Y, coord.X)
-// 	radius := 10
-
-// 	var typeSatellite = object.Geometry.GetType()
-// 	fill := determineFill(typeSatellite)
-// 	stroke := determineStroke(object)
-// 	text := determineText(typeSatellite)
-
-// 	canvas.Circle(centerX, centerY, radius, fmt.Sprintf("%v; %v", stroke, fill))
-// 	canvas.Line(centerX, centerY+radius, centerX+radius+radius/2, centerY+radius+radius/3, stroke)
-// 	canvas.Line(centerX, centerY-radius, centerX+radius+radius/2, centerY-radius-radius/3, stroke)
-// 	canvas.Text(centerX-radius/2, centerY+radius/5, text, "font-size:10px;")
-
-// 	return nil
-// }
-
-// func determineStroke(object *entities.MapObject) string {
-// 	valueAttributeAlly := getValueAttribute(object.Attrs, "ALLY_ENEMY")
-// 	isAlly := valueAttributeAlly == ""
-
-// 	if isAlly {
-// 		return "stroke: red"
-// 	}
-
-// 	return "stroke: blue"
-// }
-// func getValueAttribute(attrs []geo.BaseAttribute, code string) string {
-// 	for _, attr := range attrs {
-// 		if attr.Code == code {
-// 			return attr.Value
-// 		}
-// 	}
-// 	return ""
-// }
-
-func determineFill(typeSatellite int) string {
-	var fill string
-	switch typeSatellite {
-	case SatellitePhotoReconnaissance:
-		fill = "fill: rgb(174,198,219)"
-	case SatelliteOptoelectronicReconnaissance:
-		fill = "fill: rgb(255, 230, 153)"
-	case SatelliteRadiolocatingReconnaissance:
-		fill = "fill: rgb(255,80,80)"
-	case SatelliteCommunicationL:
-		fill = "fill: rgb(255,255,0)"
-	case SatelliteCommunicationS:
-		fill = "fill: rgb(102,255,255)"
-	case SatelliteCommunicationC:
-		fill = "fill: rgb(51,102,255)"
-	case SatelliteCommunicationX:
-		fill = "fill: rgb(102,255,102)"
-	case SatelliteCommunicationKu:
-		fill = "fill: rgb(255,0,255)"
-	case SatelliteCommunicationKa:
-		fill = "fill: rgb(217,217,217)"
-	default:
-		fill = "fill: none"
-	}
-	return fill
-}
-
-func determineText(typeSatellite int) string {
-	var text string
-	switch typeSatellite {
-	case SatellitePhotoReconnaissance,
-		SatelliteOptoelectronicReconnaissance,
-		SatelliteRadiolocatingReconnaissance:
-		text = "Р"
-	case SatelliteNavigation:
-		text = "Н"
-	case SatelliteCommunicationC,
-		SatelliteCommunicationK,
-		SatelliteCommunicationKa,
-		SatelliteCommunicationKu,
-		SatelliteCommunicationL,
-		SatelliteCommunicationS,
-		SatelliteCommunicationX:
-		text = "C"
-	case SatelliteMeteorological:
-		text = "М"
-	case SatelliteExperimental:
-		text = "Э"
-	case SatelliteRepeater:
-		text = "РТ"
-	case SatelliteRemoteSoundingEarth:
-		text = "ДЗ"
-	case SatelliteAttackWarning:
-		text = "ПР"
-	default:
-		text = ""
-	}
-
-	return text
-}
-
-const (
-	/// Спутник
-	Satellite = 149
-	/// Спутник связи (L-диапазон)
-	SatelliteCommunicationL = 150
-	/// Спутник связи (S-диапазон)
-	SatelliteCommunicationS = 151
-	/// Спутник связи (C-диапазон)
-	SatelliteCommunicationC = 152
-	/// Спутник связи (X-диапазон)
-	SatelliteCommunicationX = 153
-	/// Спутник связи (Ku-диапазон)
-	SatelliteCommunicationKu = 154
-	/// Спутник связи (Ka-диапазон)
-	SatelliteCommunicationKa = 155
-	/// Спутник связи (K-диапазон)
-	SatelliteCommunicationK = 156
-	/// Спутник фото-разведки
-	SatellitePhotoReconnaissance = 161
-	/// Оптикоэлектронный спутник разведки
-	SatelliteOptoelectronicReconnaissance = 162
-	/// Радиолокационный спутник разведки
-	SatelliteRadiolocatingReconnaissance = 163
-	/// Спутник навигации
-	SatelliteNavigation = 160
-	/// Метеорологический спутник
-	SatelliteMeteorological = 159
-	/// Эксперементальный спутник
-	SatelliteExperimental = 158
-	/// Спутник - ретранслятор
-	SatelliteRepeater = 165
-	/// Спутник дистанционного зондирования земли
-	SatelliteRemoteSoundingEarth = 164
-	/// Спутник системы предупреждения о ракетном нападении
-	SatelliteAttackWarning = 157
-)
