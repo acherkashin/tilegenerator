@@ -257,22 +257,27 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 			stroke: black;
 			}`)
 
-	// fullLength := getLengthPolyline(coords, tile) / 2
-	// alreadyDrawn := false
+	fullLength := getLengthPolyline(coords, tile) / 2
+	alreadyDrawn := false
 
 	for i := 0; i < len(coords)-1; i++ {
 
 		area := newPatrollingArea(tile, coords, i)
-		// lineLength := getLineLength(tile, &coords[i], &coords[i+1])
-		// fullLength -= lineLength
-		// if fullLength <= 0 && !alreadyDrawn {
-		renderImageOnPatrollingArea(canvas, object, area, tile.Z)
-		// 	alreadyDrawn = true
-		// }
+		lineLength := getLineLength(tile, &coords[i], &coords[i+1])
+		fullLength -= lineLength
 
 		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
-
 		canvas.Gtransform(transformation)
+
+		if fullLength <= 0 && !alreadyDrawn {
+			percentPosition := (-1) * fullLength / lineLength
+
+			x := float64(area.leftLinePointX) + (float64(area.rightLinePointX-area.leftLinePointX) * percentPosition)
+			y := float64(area.leftLinePointY) + (float64(area.rightLinePointY-area.leftLinePointY) * percentPosition)
+			renderImageOnPatrollingArea(canvas, object, area, x, y, tile.Z)
+			alreadyDrawn = true
+		}
+
 		canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY)
 		canvas.Polyline(area.rightArrowXs, area.rightArrowYs)
 		canvas.Polyline(area.leftArrowXs, area.leftArrowYs)
@@ -303,8 +308,9 @@ func getLineLength(tile *Tile, coord1 *geometry.Coord, coord2 *geometry.Coord) f
 	return lineLength
 }
 
-func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, zoom int) {
-	bytesImg, err := utils.GetImgFromFile(fmt.Sprintf("images\\%v.png", object.TypeID))
+func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, x, y float64, zoom int) {
+	// bytesImg, err := utils.GetImgFromFile(fmt.Sprintf("images\\%v.png", object.TypeID))
+	bytesImg, err := utils.GetImgFromFile("images\\188.png")
 
 	if err == nil {
 		imgBase64Str := base64.StdEncoding.EncodeToString(bytesImg)
@@ -314,12 +320,12 @@ func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, ar
 		imageWidth := 5 + 4*zoom
 		imageHeight := 7 + 5*zoom
 
-		canvas.Image(area.centerX-(int)(imageWidth/2.0),
-			area.centerY-(int)(imageHeight/2.0),
-			(int)(imageWidth),
-			(int)(imageHeight),
+		canvas.Image(int(x)-(int)(imageWidth/2.0),
+			int(y)-(int)(imageHeight/2.0),
+			int(imageWidth),
+			int(imageHeight),
 			img2html,
-			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", area.rotateAngel+90, area.centerX, area.centerY))
+			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", 90, x, y))
 
 	}
 }
@@ -398,8 +404,8 @@ func RenderBeamDiagram(canvas *svg.SVG, object *entities.MapObject, tile *Tile, 
 func GetArrowPoints(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
 	var angel int
 	var centerX, centerY, rotatedPointX, rotatedPointY int
-
-	percentSize := 0.95 + 0.0019999*(float64)(zoom)
+	distance := distanceBeetweenPoints(BeginX, BeginY, EndX, EndY)
+	percentSize := 1 - 10.0/distance // + 0.0019999*(float64)(zoom)
 	angel = 120
 	centerX = BeginX + (int)((float64)(EndX-BeginX)*percentSize)
 	centerY = BeginY + (int)((float64)(EndY-BeginY)*percentSize)
