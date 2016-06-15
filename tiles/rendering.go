@@ -63,8 +63,8 @@ type patrollingArea struct {
 }
 
 func newPatrollingArea(tile *Tile, coords []geometry.Coord, firstIndex int) *patrollingArea {
-	x1, y1 := tile.Degrees2Pixels(coords[firstIndex].Y, coords[firstIndex].X)
-	x2, y2 := tile.Degrees2Pixels(coords[firstIndex+1].Y, coords[firstIndex+1].X)
+	x1, y1 := int(coords[firstIndex].X), int(coords[firstIndex].Y)
+	x2, y2 := int(coords[firstIndex+1].X), int(coords[firstIndex+1].Y)
 
 	radiusX := int(distanceBeetweenPoints(x1, y1, x2, y2) / 4)
 	radiusY := int(radiusX / 2)
@@ -242,6 +242,41 @@ func getMax(chartPoints []*chartPoint) float64 {
 	return max
 }
 
+// RenderRouteAviationFlight renders an aviation route on a tile
+func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	line, err := object.Geometry.AsLineString()
+	if err != nil {
+		return err
+	}
+	coords := line.Coordinates
+	weight := 1
+	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
+	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
+	canvas.Group()
+
+	fullLength := getLengthPolyline(coords, tile) / 2
+	alreadyDrawn := false
+
+	for i := 0; i < len(coords)-1; i++ {
+		canvas.Line(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
+		xs, ys := GetArrowPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z)
+		canvas.Polyline(xs, ys, styleArrow)
+
+		lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
+		fullLength -= lineLength
+
+		if fullLength <= 0 && !alreadyDrawn {
+			percentPosition := (-1.0) * fullLength / lineLength
+
+			renderImageOnRouteAviation(canvas, object, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z, percentPosition)
+			alreadyDrawn = true
+		}
+	}
+
+	canvas.Gend()
+	return nil
+}
+
 /*
 RenderPatrollingArea (район барражирования)
 */
@@ -263,14 +298,14 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 	for i := 0; i < len(coords)-1; i++ {
 
 		area := newPatrollingArea(tile, coords, i)
-		lineLength := getLineLength(tile, &coords[i], &coords[i+1])
+		lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
 		fullLength -= lineLength
 
 		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
 		canvas.Gtransform(transformation)
 
 		if fullLength <= 0 && !alreadyDrawn {
-			percentPosition := (-1) * fullLength / lineLength
+			percentPosition := (-1.0) * fullLength / lineLength
 
 			x := float64(area.leftLinePointX) + (float64(area.rightLinePointX-area.leftLinePointX) * percentPosition)
 			y := float64(area.leftLinePointY) + (float64(area.rightLinePointY-area.leftLinePointY) * percentPosition)
@@ -279,58 +314,34 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 		}
 
 		canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY)
-		canvas.Polyline(area.rightArrowXs, area.rightArrowYs)
-		canvas.Polyline(area.leftArrowXs, area.leftArrowYs)
-		canvas.Arc(area.rightLinePointX,
-			area.rightLinePointY,
-			area.radiusX,
-			area.radiusY,
-			0, false, true,
-			area.rightLinePointX,
-			area.rightLinePointY+int(2*area.radiusY))
-		canvas.Arc(area.leftLinePointX,
-			area.leftLinePointY,
-			area.radiusX,
-			area.radiusY,
-			0, false, true,
-			area.leftLinePointX,
-			area.leftLinePointY-int(2*area.radiusY))
+		if i == 0 {
+			canvas.Polyline(area.rightArrowXs, area.rightArrowYs)
+			canvas.Arc(area.rightLinePointX,
+				area.rightLinePointY,
+				area.radiusX,
+				area.radiusY,
+				0, false, true,
+				area.rightLinePointX,
+				area.rightLinePointY+int(2*area.radiusY))
+		}
+
+		if i == len(coords)-2 {
+			canvas.Polyline(area.leftArrowXs, area.leftArrowYs)
+			canvas.Arc(area.leftLinePointX,
+				area.leftLinePointY,
+				area.radiusX,
+				area.radiusY,
+				0, false, true,
+				area.leftLinePointX,
+				area.leftLinePointY-int(2*area.radiusY))
+		}
 		canvas.Gend()
 	}
 	canvas.Gend()
 	return nil
 }
-func getLineLength(tile *Tile, coord1 *geometry.Coord, coord2 *geometry.Coord) float64 {
-	x1, y1 := tile.Degrees2Pixels(coord1.X, coord1.Y)
-	x2, y2 := tile.Degrees2Pixels(coord2.X, coord2.Y)
-	lineLength := distanceBeetweenPoints(x1, y1, x2, y2)
-
-	return lineLength
-}
 
 func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, x, y float64, zoom int) {
-	// bytesImg, err := utils.GetImgFromFile(fmt.Sprintf("images\\%v.png", object.TypeID))
-	bytesImg, err := utils.GetImgFromFile("images\\188.png")
-
-	if err == nil {
-		imgBase64Str := base64.StdEncoding.EncodeToString(bytesImg)
-
-		img2html := "data:image/png;base64," + imgBase64Str
-
-		imageWidth := 5 + 4*zoom
-		imageHeight := 7 + 5*zoom
-
-		canvas.Image(int(x)-(int)(imageWidth/2.0),
-			int(y)-(int)(imageHeight/2.0),
-			int(imageWidth),
-			int(imageHeight),
-			img2html,
-			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", 90, x, y))
-
-	}
-}
-
-func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1, y1, x2, y2, zoom int) {
 	bytesImg, err := utils.GetImgFromFile(fmt.Sprintf("images\\%v.png", object.TypeID))
 
 	if err == nil {
@@ -338,10 +349,32 @@ func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1,
 
 		img2html := "data:image/png;base64," + imgBase64Str
 
-		imageWidth := 5 + 4*zoom
-		imageHeight := 7 + 5*zoom
+		imageWidth := 5 + 5*zoom
+		imageHeight := 7 + 6*zoom
+
+		canvas.Image(int(x)-(int)(imageWidth/2.0),
+			int(y)-(int)(imageHeight/2.0),
+			int(imageWidth),
+			int(imageHeight),
+			img2html,
+			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", 90, x, y))
+	}
+}
+
+func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1, y1, x2, y2, zoom int, percentPosition float64) {
+	bytesImg, err := utils.GetImgFromFile(fmt.Sprintf("images\\%v.png", object.TypeID))
+
+	if err == nil {
+		imgBase64Str := base64.StdEncoding.EncodeToString(bytesImg)
+
+		img2html := "data:image/png;base64," + imgBase64Str
+
+		imageWidth := 5 + 5*zoom
+		imageHeight := 7 + 6*zoom
 		angel := getAngel(x1, y1, x2, y2)
-		centerX, centerY := getLineCenter(x1, y1, x2, y2)
+
+		centerX := x1 + (int)((float64)(x2-x1)*percentPosition)
+		centerY := y1 + (int)((float64)(y2-y1)*percentPosition)
 
 		canvas.Image(centerX-(int)(imageWidth/2.0),
 			centerY-(int)(imageHeight/2.0),
@@ -349,7 +382,6 @@ func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1,
 			(int)(imageHeight),
 			img2html,
 			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel+90, centerX, centerY))
-
 	}
 }
 
@@ -357,55 +389,17 @@ func getLengthPolyline(coords []geometry.Coord, tile *Tile) float64 {
 	sum := 0.0
 
 	for i := 0; i < len(coords)-1; i++ {
-		x1, y1 := tile.Degrees2Pixels(coords[i].X, coords[i].Y)
-		x2, y2 := tile.Degrees2Pixels(coords[i+1].X, coords[i+1].Y)
-		sum += distanceBeetweenPoints(x1, y1, x2, y2)
+		sum += distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
 	}
 
 	return sum
-}
-
-/*
-RenderBeamDiagram - drawing satellite directional diagram
-*/
-func RenderBeamDiagram(canvas *svg.SVG, object *entities.MapObject, tile *Tile, beamDiagram *beamDiagram) error {
-	point, err := object.Geometry.AsPoint()
-	if err != nil {
-		return err
-	}
-
-	// needShow := getValueAttribute(object.Attrs, "NEED_SHOW_DIRECTIONAL_DIAGRAM")
-	// isAntenna := getValueAttribute(object.Attrs, "IS_SHORTWAVE_ANTENNA")
-
-	// if needShow == "TRUE" && isAntenna == "TRUE" {
-	coord := point.Coordinates
-
-	beamDiagram.radius *= float64(tile.Z+1) / 3
-	centerX, centerY := tile.Degrees2Pixels(coord.Y, coord.X)
-
-	strokeWidth := float64(beamDiagram.radius) / float64(100)
-	xs, ys := beamDiagram.getPoints(centerX, centerY)
-	templateStyle := "stroke:%v; stroke-width:%v; fill: none;"
-	rotation := fmt.Sprintf("rotate(%v,%v,%v)", beamDiagram.angelRotation, centerX, centerY)
-
-	canvas.Gtransform(rotation)
-	polarGridXs, polarGridYs := getPointsForPolarGrid(centerX, centerY, beamDiagram.radius)
-	for i := 0; i < len(polarGridXs); i++ {
-		canvas.Line(centerX, centerY, polarGridXs[i], polarGridYs[i], fmt.Sprintf(templateStyle, "gray", strokeWidth))
-	}
-	canvas.Circle(centerX, centerY, int(beamDiagram.radius*0.67), fmt.Sprintf(templateStyle, "yellow", strokeWidth))
-	canvas.Circle(centerX, centerY, int(beamDiagram.radius), fmt.Sprintf(templateStyle, "green", strokeWidth))
-	canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
-	canvas.Gend()
-	// }
-	return nil
 }
 
 func GetArrowPoints(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
 	var angel int
 	var centerX, centerY, rotatedPointX, rotatedPointY int
 	distance := distanceBeetweenPoints(BeginX, BeginY, EndX, EndY)
-	percentSize := 1 - 10.0/distance // + 0.0019999*(float64)(zoom)
+	percentSize := 1 - 5.0/distance
 	angel = 120
 	centerX = BeginX + (int)((float64)(EndX-BeginX)*percentSize)
 	centerY = BeginY + (int)((float64)(EndY-BeginY)*percentSize)
@@ -424,64 +418,4 @@ func RotatePoint(centerX, centerY, pointX, pointY, angel int) (x, y int) {
 	x = centerX + (int)((float64)(pointX-centerX)*math.Cos((float64)(angel)*math.Pi/180)) - (int)((float64)(pointY-centerY)*math.Sin((float64)(angel)/180*math.Pi))
 	y = centerY + (int)((float64)(pointX-centerX)*math.Sin((float64)(angel)*math.Pi/180)) + (int)((float64)(pointY-centerY)*math.Cos((float64)(angel)/180*math.Pi))
 	return x, y
-}
-
-// RenderRouteAviationFlight renders an aviation route on a tile
-func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
-	line, err := object.Geometry.AsLineString()
-	if err != nil {
-		return err
-	}
-	coords := line.Coordinates
-	weight := 1
-	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
-	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
-	canvas.Group()
-
-	var x1, y1, x2, y2 int
-
-	for i := 0; i < len(coords)-1; i++ {
-		x1, y1 = tile.Degrees2Pixels(coords[i].Y, coords[i].X)
-		x2, y2 = tile.Degrees2Pixels(coords[i+1].Y, coords[i+1].X)
-		canvas.Line(x1, y1, x2, y2, style)
-		xs, ys := GetArrowPoints(x1, y1, x2, y2, tile.Z)
-		canvas.Polyline(xs, ys, styleArrow)
-		renderImageOnRouteAviation(canvas, object, x1, y1, x2, y2, tile.Z)
-	}
-
-	canvas.Gend()
-	return nil
-}
-
-// RenderSatelliteVisibility renders a atellites visibility chart
-func RenderSatelliteVisibility(canvas *svg.SVG, object *entities.MapObject, radiomodules []*entities.MapObject, tile *Tile) error {
-	point, err := object.Geometry.AsPoint()
-	if err != nil {
-		return err
-	}
-
-	coord := point.Coordinates
-
-	x1, y1 := tile.Degrees2Pixels(coord.Y, coord.X)
-	x2, y2 := tile.Degrees2Pixels(float64(coord.Y+2), float64(coord.X+2))
-	distance := distanceBeetweenPoints(x1, y1, x2, y2)
-	canvas.Group("fill-opacity=\".3\"")
-
-	canvas.ClipPath("id=\"clip-ellipse\"")
-	canvas.Ellipse(x1, y1, int(distance), int(distance*0.7))
-	canvas.ClipEnd()
-
-	canvas.Ellipse(x1, y1, int(distance), int(distance*0.7), "stroke:black; fill: green; ")
-
-	for _, radioModule := range radiomodules {
-		rmPoint, err := radioModule.Geometry.AsPoint()
-		if err == nil {
-			rmCoords := rmPoint.Coordinates
-			x, y := tile.Degrees2Pixels(rmCoords.Y, rmCoords.X)
-			canvas.Circle(x, y, int(distance*0.2), "stroke:black; fill: blue; clip-path: url(#clip-ellipse)")
-		}
-	}
-	canvas.Gend()
-
-	return nil
 }
