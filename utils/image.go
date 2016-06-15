@@ -1,9 +1,11 @@
 package utils
 
 import (
+	"bufio"
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"sync"
 )
 
@@ -27,4 +29,26 @@ func GetImgByURL(url string) ([]byte, error) {
 			return nil, errors.New("Can't load img")
 		}
 	}
+}
+
+func GetImgFromFile(path string) ([]byte, error) {
+	imgFile, err := os.Open(path)
+
+	if err == nil {
+
+		defer imgFile.Close()
+
+		// create a new buffer base on file size
+		fInfo, _ := imgFile.Stat()
+		size := fInfo.Size()
+		buf := make([]byte, size)
+
+		// read file content into buffer
+		fReader := bufio.NewReader(imgFile)
+		fReader.Read(buf)
+
+		return buf, err
+	}
+
+	return nil, err
 }

@@ -46,6 +46,14 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 			objects = append(objects, obj)
 		}
 	}
+	specialObjects, err := db.GetAllSpecialObject()
+	if err == nil {
+		for _, obj := range specialObjects {
+			// obj.StyleName = "home"
+			objects = append(objects, obj)
+		}
+	}
+
 	writer.Header().Set("Content-Type", "image/svg+xml")
 	tiles.RenderTile(tile, &objects, styles, writer)
 }
