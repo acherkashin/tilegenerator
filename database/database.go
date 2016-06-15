@@ -27,10 +27,16 @@ func (gdb *GeometryDB) rowsToMapObjects(rows *sql.Rows) ([]entities.MapObject, e
 		var ID int
 		var typeID int
 		var wkt string
+<<<<<<< HEAD
 		err := tmpRows.Scan(&ID, &typeID, &wkt)
+=======
+		var label string
+		err := tmpRows.Scan(&ID, &wkt, &label)
+>>>>>>> 6bfe44e5dfdff73a5334cf15fa92da1455dcc76e
 		if err == nil {
 			mapObj, mapObjErr := entities.NewObject(ID, typeID, wkt)
 			if mapObjErr == nil {
+				mapObj.Label = label
 				mapObjects = append(mapObjects, *mapObj)
 			} else {
 				fmt.Println(errors.New("Can't create map object"))
@@ -57,11 +63,12 @@ func (gdb *GeometryDB) InitConnection(username string, connstring string, geomta
 // Return slice of all geometries in a database
 func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile) (mapObjects []entities.MapObject, err error) {
 	q := fmt.Sprintf(`
-		SELECT id, type_id, ST_AsText( ST_Transform( %s, 4326 ) ) from %s
-		where type_id not in (170, 11) and
-		ST_Contains(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom);
-		
-		`, gdb.geomcol, gdb.geomtable, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South)
+		SELECT id, ST_AsText( ST_Transform( %s, 4326 ) ), coalesce(text1, '') from %s
+		where type_id not in (170, 11) and 
+		(min_zoom <= %v or min_zoom is null) and
+		(max_zoom >= %v or max_zoom is null) and
+		ST_Intersects(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom);
+		`, gdb.geomcol, gdb.geomtable, tile.Z, tile.Z, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South)
 
 	rows, err := gdb.conn.Query(q)
 	if err == nil {

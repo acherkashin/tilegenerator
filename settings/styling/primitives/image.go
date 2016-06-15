@@ -10,7 +10,6 @@ import (
 	"github.com/TerraFactory/svgo"
 	"github.com/TerraFactory/tilegenerator/database/entities"
 	"github.com/TerraFactory/tilegenerator/utils"
-	"github.com/TerraFactory/wktparser/geometry"
 )
 
 type ImagePrimitive struct {
@@ -22,8 +21,8 @@ type ImagePrimitive struct {
 	bytes  []byte
 }
 
-func (img ImagePrimitive) Render(svg *svg.SVG, geo geometry.Geometry, object *entities.MapObject) {
-	point, _ := geo.AsPoint()
+func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
+	point, _ := object.Geometry.AsPoint()
 	resultHref := strings.Replace(img.Href, "${ID}", strconv.Itoa(object.ID), 1)
 	if result, err := utils.GetImgByURL(resultHref); err == nil {
 		img.bytes = result
