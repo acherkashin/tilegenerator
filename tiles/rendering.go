@@ -1,6 +1,7 @@
 package tiles
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"math"
@@ -9,6 +10,7 @@ import (
 	"github.com/TerraFactory/svgo"
 	"github.com/TerraFactory/tilegenerator/database/entities"
 	"github.com/TerraFactory/tilegenerator/settings/styling"
+	"github.com/TerraFactory/tilegenerator/utils"
 	"github.com/TerraFactory/wktparser/geometry"
 )
 
@@ -26,9 +28,9 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 		for _, style := range *styles {
 			if style.ShouldRender(&object) {
 				style.Render(&object, canvas)
-			} else if object.TypeID == 47 {
+			} else if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
 				RenderPatrollingArea(canvas, &object, tile)
-			} else if object.TypeID == 74 {
+			} else if object.TypeID == 74 || (object.TypeID >= 174 && object.TypeID <= 183) {
 				RenderRouteAviationFlight(canvas, &object, tile)
 			}
 		}
@@ -254,8 +256,20 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 			fill: none;
 			stroke: black;
 			}`)
+
+	fullLength := getLengthPolyline(coords, tile) / 2
+	alreadyDrawn := false
+
 	for i := 0; i < len(coords)-1; i++ {
+
 		area := newPatrollingArea(tile, coords, i)
+		lineLength := getLineLength(tile, &coords[i], &coords[i+1])
+		fullLength -= lineLength
+		if fullLength <= 0 && !alreadyDrawn {
+			renderImageOnPatrollingArea(canvas, object, area, tile.Z)
+			alreadyDrawn = true
+		}
+
 		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
 
 		canvas.Gtransform(transformation)
@@ -280,6 +294,46 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 	}
 	canvas.Gend()
 	return nil
+}
+func getLineLength(tile *Tile, coord1 *geometry.Coord, coord2 *geometry.Coord) float64 {
+	x1, y1 := tile.Degrees2Pixels(coord1.X, coord1.Y)
+	x2, y2 := tile.Degrees2Pixels(coord2.X, coord2.Y)
+	lineLength := distanceBeetweenPoints(x1, y1, x2, y2)
+
+	return lineLength
+}
+func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, zoom int) {
+
+	bytesImg, err := utils.GetImgFromFile(fmt.Sprintf("images\\%v.png", object.TypeID))
+
+	if err == nil {
+		imgBase64Str := base64.StdEncoding.EncodeToString(bytesImg)
+
+		img2html := "data:image/png;base64," + imgBase64Str
+
+		imageWidth := 5 + 4*zoom
+		imageHeight := 7 + 5*zoom
+
+		canvas.Image(area.centerX-(int)(imageWidth/2.0),
+			area.centerY-(int)(imageHeight/2.0),
+			(int)(imageWidth),
+			(int)(imageHeight),
+			img2html,
+			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", area.rotateAngel+90, area.centerX, area.centerY))
+
+	}
+}
+
+func getLengthPolyline(coords []geometry.Coord, tile *Tile) float64 {
+	sum := 0.0
+
+	for i := 0; i < len(coords)-1; i++ {
+		x1, y1 := tile.Degrees2Pixels(coords[i].X, coords[i].Y)
+		x2, y2 := tile.Degrees2Pixels(coords[i+1].X, coords[i+1].Y)
+		sum += distanceBeetweenPoints(x1, y1, x2, y2)
+	}
+
+	return sum
 }
 
 /*
