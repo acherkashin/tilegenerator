@@ -250,6 +250,7 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	}
 	coords := line.Coordinates
 	weight := 1
+	lengthArrow := 5.0
 	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
 	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
 	canvas.Group()
@@ -259,11 +260,14 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 
 	for i := 0; i < len(coords)-1; i++ {
 		canvas.Line(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
-		xs, ys := GetArrowPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z)
-		canvas.Polyline(xs, ys, styleArrow)
 
 		lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
 		fullLength -= lineLength
+
+		if lineLength > lengthArrow {
+			xs, ys := GetArrowPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z)
+			canvas.Polyline(xs, ys, styleArrow)
+		}
 
 		if fullLength <= 0 && !alreadyDrawn {
 			percentPosition := (-1.0) * fullLength / lineLength
