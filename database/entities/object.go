@@ -9,21 +9,33 @@ import (
 
 // MapObject represents a geometry on a map
 type MapObject struct {
-	ID        int
-	StyleName string
-	TypeID    int
-	Label     string
-	Position  string
-	Size      int
-	Geometry  geometry.Geometry
+	ID                    int
+	StyleName             string
+	TypeID                int
+	Label                 string
+	Position              string
+	Size                  int
+	IsAntenna             bool
+	NeedShowAzimuthalGrid bool
+	Geometry              geometry.Geometry
+	BeamWidth             float64
+	Sidelobes             float64
 }
 
 // NewObject creates new MapObject with a parsed from WKT geometry
-func NewObject(id int, typeId int, wkt string) (*MapObject, error) {
+func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid bool, beamWidth, sidelobes float64) (*MapObject, error) {
 	geo, err := wktparser.Parse(wkt)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil, err
 	}
-	return &MapObject{ID: id, TypeID: typeId, Geometry: geo}, nil
+
+	return &MapObject{
+		ID:                    id,
+		TypeID:                typeId,
+		Geometry:              geo,
+		IsAntenna:             isAntenna,
+		NeedShowAzimuthalGrid: needShowAzimuthalGrid,
+		BeamWidth:             beamWidth,
+		Sidelobes:             sidelobes}, nil
 }

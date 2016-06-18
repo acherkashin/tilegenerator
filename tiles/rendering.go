@@ -28,6 +28,9 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 		for _, style := range *styles {
 			if style.ShouldRender(&object) {
 				style.Render(&object, canvas)
+				if object.IsAntenna {
+					RenderBeamDiagram(canvas, &object, tile)
+				}
 			} else if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
 				RenderPatrollingArea(canvas, &object, tile)
 			} else if object.TypeID == 74 || (object.TypeID >= 174 && object.TypeID <= 183) {
@@ -41,13 +44,6 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 
 type chartPoint struct {
 	x, y, z, value float64
-}
-
-type beamDiagram struct {
-	radius          float64
-	sidelobes       float64
-	angelRotation   float64
-	sliderBeamWidth int
 }
 
 type patrollingArea struct {
@@ -104,16 +100,16 @@ func newCharPoint(x, y, z, value float64) *chartPoint {
 	return &cp
 }
 
-func (beamDiagram *beamDiagram) getPoints(centerX, centerY int) (xs, ys []int) {
-	tempPointList := getTempPointsForBeamPoints(beamDiagram.sliderBeamWidth, beamDiagram.sidelobes)
+func getBeamDiagramPoints(centerX, centerY, beamWidth int, sidelobes, radius float64) (xs, ys []int) {
+	tempPointList := getTempPointsForBeamPoints(beamWidth, sidelobes)
 	maxValue := getMax(tempPointList)
 
 	for _, point := range tempPointList {
-		xs = append(xs, centerX+int(point.y*beamDiagram.radius/maxValue))
-		ys = append(ys, centerY+int(point.x*beamDiagram.radius/maxValue))
+		xs = append(xs, centerX+int(point.y*radius/maxValue))
+		ys = append(ys, centerY+int(point.x*radius/maxValue))
 	}
 
-	xs[0] = centerX + int(beamDiagram.radius)
+	xs[0] = centerX + int(radius)
 	ys[0] = centerY
 
 	return xs, ys
@@ -248,6 +244,7 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	if err != nil {
 		return err
 	}
+
 	coords := line.Coordinates
 	weight := 1
 	lengthArrow := 5.0
@@ -422,4 +419,39 @@ func RotatePoint(centerX, centerY, pointX, pointY, angel int) (x, y int) {
 	x = centerX + (int)((float64)(pointX-centerX)*math.Cos((float64)(angel)*math.Pi/180)) - (int)((float64)(pointY-centerY)*math.Sin((float64)(angel)/180*math.Pi))
 	y = centerY + (int)((float64)(pointX-centerX)*math.Sin((float64)(angel)*math.Pi/180)) + (int)((float64)(pointY-centerY)*math.Cos((float64)(angel)/180*math.Pi))
 	return x, y
+}
+
+/*
+RenderBeamDiagram - drawing satellite directional diagram
+ "F(q) = Sin(K * Pi * Sin(q)) / Sin(Pi * Sin(q)/ (5.1 - 4 * N)))"
+ "k" - beam
+ "q" - угол
+ "n" - sidelobes(боковые лепестки)
+*/
+func RenderBeamDiagram(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	point, err := object.Geometry.AsPoint()
+	if err != nil {
+		return err
+	}
+
+	radius := 20 * float64(tile.Z+1) / 3
+	centerX, centerY := int(point.Coordinates.Y), int(point.Coordinates.X)
+
+	strokeWidth := float64(radius) / float64(100)
+	xs, ys := getBeamDiagramPoints(centerX, centerY, int(object.BeamWidth), object.Sidelobes, radius)
+	templateStyle := "stroke:%v; stroke-width:%v; fill: none;"
+	// rotation := fmt.Sprintf("rotate(%v,%v,%v)", beamDiagram.angelRotation, centerX, centerY)
+	// canvas.Gtransform(rotation)
+
+	if object.NeedShowAzimuthalGrid {
+		polarGridXs, polarGridYs := getPointsForPolarGrid(centerX, centerY, radius)
+		for i := 0; i < len(polarGridXs); i++ {
+			canvas.Line(centerX, centerY, polarGridXs[i], polarGridYs[i], fmt.Sprintf(templateStyle, "gray", strokeWidth))
+		}
+	}
+	canvas.Circle(centerX, centerY, int(radius*0.67), fmt.Sprintf(templateStyle, "yellow", strokeWidth))
+	canvas.Circle(centerX, centerY, int(radius), fmt.Sprintf(templateStyle, "green", strokeWidth))
+	canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
+	// canvas.Gend()
+	return nil
 }
