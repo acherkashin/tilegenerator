@@ -3,6 +3,7 @@ package utils
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -50,5 +51,6 @@ func GetImgFromFile(path string) ([]byte, error) {
 		return buf, err
 	}
 
+	fmt.Println(err)
 	return nil, err
 }
