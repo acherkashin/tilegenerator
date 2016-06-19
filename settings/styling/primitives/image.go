@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"encoding/base64"
+
 	"github.com/TerraFactory/svgo"
 	"github.com/TerraFactory/tilegenerator/database/entities"
 	"github.com/TerraFactory/tilegenerator/utils"
@@ -24,6 +25,7 @@ type ImagePrimitive struct {
 func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 	point, _ := object.Geometry.AsPoint()
 	resultHref := strings.Replace(img.Href, "${ID}", strconv.Itoa(object.ID), 1)
+
 	if result, err := utils.GetImgByURL(resultHref); err == nil {
 		img.bytes = result
 		inlineBase64Img := base64.StdEncoding.EncodeToString(img.bytes)
