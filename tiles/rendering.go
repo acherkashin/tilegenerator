@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"path/filepath"
 	"strconv"
 
 	"github.com/TerraFactory/svgo"
@@ -265,12 +266,13 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 			xs, ys := GetArrowPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z)
 			canvas.Polyline(xs, ys, styleArrow)
 		}
+		if object.TypeID != 74 {
+			if fullLength <= 0 && !alreadyDrawn {
+				percentPosition := (-1.0) * fullLength / lineLength
 
-		if fullLength <= 0 && !alreadyDrawn {
-			percentPosition := (-1.0) * fullLength / lineLength
-
-			renderImageOnRouteAviation(canvas, object, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z, percentPosition)
-			alreadyDrawn = true
+				renderImageOnRouteAviation(canvas, object, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z, percentPosition)
+				alreadyDrawn = true
+			}
 		}
 	}
 
@@ -304,14 +306,16 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 
 		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
 		canvas.Gtransform(transformation)
+		if object.TypeID != 47 {
+			if fullLength <= 0 && !alreadyDrawn {
+				percentPosition := (-1.0) * fullLength / lineLength
 
-		if fullLength <= 0 && !alreadyDrawn {
-			percentPosition := (-1.0) * fullLength / lineLength
+				x := float64(area.leftLinePointX) + (float64(area.rightLinePointX-area.leftLinePointX) * percentPosition)
+				y := float64(area.leftLinePointY) + (float64(area.rightLinePointY-area.leftLinePointY) * percentPosition)
 
-			x := float64(area.leftLinePointX) + (float64(area.rightLinePointX-area.leftLinePointX) * percentPosition)
-			y := float64(area.leftLinePointY) + (float64(area.rightLinePointY-area.leftLinePointY) * percentPosition)
-			renderImageOnPatrollingArea(canvas, object, area, x, y, tile.Z)
-			alreadyDrawn = true
+				renderImageOnPatrollingArea(canvas, object, area, x, y, tile.Z)
+				alreadyDrawn = true
+			}
 		}
 
 		canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY)
@@ -343,7 +347,7 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 }
 
 func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, x, y float64, zoom int) {
-	bytesImg, err := utils.GetImgFromFile(fmt.Sprintf("images\\%v.png", object.TypeID))
+	bytesImg, err := utils.GetImgFromFile(filepath.FromSlash(fmt.Sprintf("images/%v.png", object.TypeID)))
 
 	if err == nil {
 		imgBase64Str := base64.StdEncoding.EncodeToString(bytesImg)
@@ -363,7 +367,7 @@ func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, ar
 }
 
 func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1, y1, x2, y2, zoom int, percentPosition float64) {
-	bytesImg, err := utils.GetImgFromFile(fmt.Sprintf("images\\%v.png", object.TypeID))
+	bytesImg, err := utils.GetImgFromFile(filepath.FromSlash(fmt.Sprintf("images/%v.png", object.TypeID)))
 
 	if err == nil {
 		imgBase64Str := base64.StdEncoding.EncodeToString(bytesImg)
@@ -435,7 +439,7 @@ func RenderBeamDiagram(canvas *svg.SVG, object *entities.MapObject, tile *Tile) 
 	}
 
 	radius := 20 * float64(tile.Z+1) / 3
-	centerX, centerY := int(point.Coordinates.Y), int(point.Coordinates.X)
+	centerX, centerY := int(point.Coordinates.X), int(point.Coordinates.Y)
 
 	strokeWidth := float64(radius) / float64(100)
 	xs, ys := getBeamDiagramPoints(centerX, centerY, int(object.BeamWidth), object.Sidelobes, radius)
