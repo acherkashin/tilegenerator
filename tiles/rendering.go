@@ -347,7 +347,6 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 }
 
 func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, x, y float64, zoom int) {
-	fmt.Println(filepath.FromSlash(fmt.Sprintf("images/%v.png", object.TypeID)))
 	bytesImg, err := utils.GetImgFromFile(filepath.FromSlash(fmt.Sprintf("images/%v.png", object.TypeID)))
 
 	if err == nil {
@@ -368,7 +367,6 @@ func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, ar
 }
 
 func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1, y1, x2, y2, zoom int, percentPosition float64) {
-	fmt.Println(filepath.FromSlash(fmt.Sprintf("images/%v.png", object.TypeID)))
 	bytesImg, err := utils.GetImgFromFile(filepath.FromSlash(fmt.Sprintf("images/%v.png", object.TypeID)))
 
 	if err == nil {
