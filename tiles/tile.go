@@ -7,25 +7,6 @@ import (
 // TileSize is a size of each tile in pixels
 const TileSize = 256
 
-// region BoundingBox
-
-// BoundingBox contains the most north/south/east/west coordinates of tile.
-type BoundingBox struct {
-	North float64
-	East  float64
-	South float64
-	West  float64
-}
-
-// Contains takes point latitude and longitude and returns true if this point is inside of this BoundingBox.
-func (bbox *BoundingBox) Contains(lat, lon float64) bool {
-	return (bbox.North >= lat && bbox.South <= lat) && (bbox.West <= lon && bbox.East >= lon)
-}
-
-// endregion
-
-// region Tile
-
 // Tile contains tile properties
 // Z,X,Y - tile coordinates according to OSM specs(see http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames)
 // Bounding box - geographical coordinates of each side of tile
@@ -81,5 +62,3 @@ func (tile *Tile) Degrees2Pixels(lat, lon float64) (x int, y int) {
 func (tile *Tile) Contains(lat, lon float64) bool {
 	return tile.BoundingBox.Contains(lat, lon)
 }
-
-// endregion
