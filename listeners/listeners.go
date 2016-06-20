@@ -38,6 +38,7 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	tile := tiles.NewTile(x, y, z)
+	tile.BoundingBox.AddMargin()
 
 	dbMapsObjects, dbErr := db.GetGeometriesForTile(tile)
 	if dbErr == nil {
