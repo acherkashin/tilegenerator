@@ -20,10 +20,11 @@ type MapObject struct {
 	Geometry              geometry.Geometry
 	BeamWidth             float64
 	Sidelobes             float64
+	Azimut                float64
 }
 
 // NewObject creates new MapObject with a parsed from WKT geometry
-func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid bool, beamWidth, sidelobes float64) (*MapObject, error) {
+func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid bool, beamWidth, sidelobes, azimut float64) (*MapObject, error) {
 	geo, err := wktparser.Parse(wkt)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -37,5 +38,6 @@ func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid 
 		IsAntenna:             isAntenna,
 		NeedShowAzimuthalGrid: needShowAzimuthalGrid,
 		BeamWidth:             beamWidth,
-		Sidelobes:             sidelobes}, nil
+		Sidelobes:             sidelobes,
+		Azimut:                azimut}, nil
 }

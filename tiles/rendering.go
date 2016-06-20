@@ -26,11 +26,17 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 	canvas.Start(TileSize, TileSize)
 	for _, object := range *objects {
 		object.Geometry.ConvertCoords(f)
+
 		for _, style := range *styles {
 			if style.ShouldRender(&object) {
 				style.Render(&object, canvas)
+
 				if object.IsAntenna {
 					RenderBeamDiagram(canvas, &object, tile)
+				}
+
+				if object.NeedShowAzimuthalGrid {
+					RenderAzimuthalGrid(canvas, &object, tile)
 				}
 			} else if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
 				RenderPatrollingArea(canvas, &object, tile)
@@ -444,18 +450,36 @@ func RenderBeamDiagram(canvas *svg.SVG, object *entities.MapObject, tile *Tile) 
 	strokeWidth := float64(radius) / float64(100)
 	xs, ys := getBeamDiagramPoints(centerX, centerY, int(object.BeamWidth), object.Sidelobes, radius)
 	templateStyle := "stroke:%v; stroke-width:%v; fill: none;"
-	// rotation := fmt.Sprintf("rotate(%v,%v,%v)", beamDiagram.angelRotation, centerX, centerY)
-	// canvas.Gtransform(rotation)
+	canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
 
-	if object.NeedShowAzimuthalGrid {
-		polarGridXs, polarGridYs := getPointsForPolarGrid(centerX, centerY, radius)
-		for i := 0; i < len(polarGridXs); i++ {
-			canvas.Line(centerX, centerY, polarGridXs[i], polarGridYs[i], fmt.Sprintf(templateStyle, "gray", strokeWidth))
-		}
+	return nil
+}
+
+//RenderPolarGrid ...
+func RenderAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	point, err := object.Geometry.AsPoint()
+	if err != nil {
+		return err
 	}
+
+	radius := 20 * float64(tile.Z+1) / 3
+	centerX, centerY := int(point.Coordinates.X), int(point.Coordinates.Y)
+	strokeWidth := float64(radius) / float64(100)
+	templateStyle := "stroke:%v; stroke-width:%v; fill: none;"
+	rotation := fmt.Sprintf("rotate(%v,%v,%v)", object.Azimut, centerX, centerY)
+	canvas.Gtransform(rotation)
+
+	polarGridXs, polarGridYs := getPointsForPolarGrid(centerX, centerY, radius)
+
+	for i := 0; i < len(polarGridXs); i++ {
+		canvas.Line(centerX, centerY, polarGridXs[i], polarGridYs[i], fmt.Sprintf(templateStyle, "gray", strokeWidth))
+	}
+	indexZeroAzimut := 18
+	canvas.Line(centerX, centerY, polarGridXs[indexZeroAzimut], polarGridYs[indexZeroAzimut], fmt.Sprintf(templateStyle, "red", strokeWidth))
+
 	canvas.Circle(centerX, centerY, int(radius*0.67), fmt.Sprintf(templateStyle, "yellow", strokeWidth))
 	canvas.Circle(centerX, centerY, int(radius), fmt.Sprintf(templateStyle, "green", strokeWidth))
-	canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
-	// canvas.Gend()
+	canvas.Gend()
+
 	return nil
 }
