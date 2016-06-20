@@ -9,22 +9,24 @@ import (
 
 // MapObject represents a geometry on a map
 type MapObject struct {
-	ID                    int
-	StyleName             string
-	TypeID                int
-	Label                 string
-	Position              string
-	Size                  int
-	IsAntenna             bool
-	NeedShowAzimuthalGrid bool
-	Geometry              geometry.Geometry
-	BeamWidth             float64
-	Sidelobes             float64
-	Azimut                float64
+	ID                         int
+	StyleName                  string
+	TypeID                     int
+	Label                      string
+	Position                   string
+	Size                       int
+	IsAntenna                  bool
+	NeedShowAzimuthalGrid      bool
+	Geometry                   geometry.Geometry
+	BeamWidth                  float64
+	Sidelobes                  float64
+	Azimut                     float64
+	Distance                   float64
+	NeedShowDirectionalDiagram bool
 }
 
 // NewObject creates new MapObject with a parsed from WKT geometry
-func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid bool, beamWidth, sidelobes, azimut float64) (*MapObject, error) {
+func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid, needShowDirectionalDiagram bool, beamWidth, sidelobes, azimut, distance float64) (*MapObject, error) {
 	geo, err := wktparser.Parse(wkt)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -32,12 +34,14 @@ func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid 
 	}
 
 	return &MapObject{
-		ID:                    id,
-		TypeID:                typeId,
-		Geometry:              geo,
-		IsAntenna:             isAntenna,
-		NeedShowAzimuthalGrid: needShowAzimuthalGrid,
-		BeamWidth:             beamWidth,
-		Sidelobes:             sidelobes,
-		Azimut:                azimut}, nil
+		ID:                         id,
+		TypeID:                     typeId,
+		Geometry:                   geo,
+		IsAntenna:                  isAntenna,
+		NeedShowAzimuthalGrid:      needShowAzimuthalGrid,
+		BeamWidth:                  beamWidth,
+		Sidelobes:                  sidelobes,
+		Azimut:                     azimut,
+		Distance:                   distance,
+		NeedShowDirectionalDiagram: needShowDirectionalDiagram}, nil
 }

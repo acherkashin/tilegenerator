@@ -31,7 +31,7 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 			if style.ShouldRender(&object) {
 				style.Render(&object, canvas)
 
-				if object.IsAntenna {
+				if object.IsAntenna && object.NeedShowDirectionalDiagram {
 					RenderBeamDiagram(canvas, &object, tile)
 				}
 
@@ -463,6 +463,7 @@ func RenderAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, tile *Tile
 	}
 
 	radius := 20 * float64(tile.Z+1) / 3
+
 	centerX, centerY := int(point.Coordinates.X), int(point.Coordinates.Y)
 	strokeWidth := float64(radius) / float64(100)
 	templateStyle := "stroke:%v; stroke-width:%v; fill: none;"
