@@ -47,7 +47,7 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 			objects = append(objects, obj)
 		}
 	}
-	specialObjects, err := db.GetAllSpecialObject()
+	specialObjects, err := db.GetAllSpecialObject(tile)
 	if err == nil {
 		for _, obj := range specialObjects {
 			// obj.StyleName = "home"

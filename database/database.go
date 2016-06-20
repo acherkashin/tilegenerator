@@ -83,8 +83,13 @@ func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile) (mapObjects []enti
 	}
 }
 
-func (gdb *GeometryDB) GetAllSpecialObject() (mapObjects []entities.MapObject, err error) {
-	q := fmt.Sprintf("SELECT id,type_id, ST_AsText( ST_Transform( %s, 4326 ) ), coalesce(text1, ''), coalesce(is_shortwave_antenna, false), coalesce(need_show_azimuthal_grid, false), coalesce(beam_width, '0'), coalesce(sidelobes, '1'), coalesce(azimut, '1'), coalesce(distance, '0'), coalesce(need_show_directional_diagram, 'false')  from %s WHERE (type_id BETWEEN 149 AND 165) OR (type_id IN (47,74));", gdb.geomcol, gdb.geomtable)
+func (gdb *GeometryDB) GetAllSpecialObject(tile *tiles.Tile) (mapObjects []entities.MapObject, err error) {
+	q := fmt.Sprintf(`SELECT id,type_id, ST_AsText( ST_Transform( %s, 4326 ) ), coalesce(text1, ''), coalesce(is_shortwave_antenna, false),
+		coalesce(need_show_azimuthal_grid, false), coalesce(beam_width, '0'), coalesce(sidelobes, '1'),
+		coalesce(azimut, '1'), coalesce(distance, '0'), coalesce(need_show_directional_diagram, 'false')  from %s 
+		WHERE (type_id BETWEEN 149 AND 165) OR (type_id IN (47,74)) and
+		ST_Intersects(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom);`, gdb.geomcol, gdb.geomtable, tile.Z, tile.Z, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South)
+
 	rows, err := gdb.conn.Query(q)
 	if err == nil {
 		mapObjects, scanErr := gdb.rowsToMapObjects(rows)
