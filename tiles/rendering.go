@@ -368,7 +368,7 @@ func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, ar
 			int(imageWidth),
 			int(imageHeight),
 			img2html,
-			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", 90, x, y))
+			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", -90, x, y))
 	}
 }
 
@@ -392,7 +392,7 @@ func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1,
 			(int)(imageWidth),
 			(int)(imageHeight),
 			img2html,
-			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel+90, centerX, centerY))
+			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel-90, centerX, centerY))
 	}
 }
 
