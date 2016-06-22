@@ -25,6 +25,7 @@ type ImagePrimitive struct {
 func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 	point, _ := object.Geometry.AsPoint()
 	resultHref := strings.Replace(img.Href, "${ID}", strconv.Itoa(object.ID), 1)
+	img.Rotate = object.Azimut
 
 	if result, err := utils.GetImgByURL(resultHref); err == nil {
 		img.bytes = result
@@ -58,4 +59,9 @@ func NewImagePrimitive(params *map[string]interface{}) (ImagePrimitive, error) {
 	}
 
 	return img, nil
+}
+
+func floatToString(inputNum float64) string {
+	// to convert a float number to a string
+	return strconv.FormatFloat(inputNum, 'f', 6, 64)
 }
