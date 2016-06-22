@@ -29,6 +29,13 @@ func printStartingMsg(config *settings.Settings) {
 func getTile(writer http.ResponseWriter, req *http.Request) {
 	objects := []entities.MapObject{}
 	vars := mux.Vars(req)
+	var situations string
+
+	if parseErr := req.ParseForm(); parseErr == nil {
+		situations = req.Form.Get("situations")
+		fmt.Println(situations)
+	}
+
 	x, errX := strconv.Atoi(vars["x"])
 	y, errY := strconv.Atoi(vars["y"])
 	z, errZ := strconv.Atoi(vars["z"])
@@ -40,14 +47,14 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 	tile := tiles.NewTile(x, y, z)
 	tile.BoundingBox.AddMargin()
 
-	dbMapsObjects, dbErr := db.GetGeometriesForTile(tile)
+	dbMapsObjects, dbErr := db.GetGeometriesForTile(tile, situations)
 	if dbErr == nil {
 		for _, obj := range dbMapsObjects {
 			obj.StyleName = "home"
 			objects = append(objects, obj)
 		}
 	}
-	specialObjects, err := db.GetAllSpecialObject(tile)
+	specialObjects, err := db.GetAllSpecialObject(tile, situations)
 	if err == nil {
 		for _, obj := range specialObjects {
 			// obj.StyleName = "home"
