@@ -447,11 +447,13 @@ func RenderBeamDiagram(canvas *svg.SVG, object *entities.MapObject, tile *Tile) 
 	radius := 20 * float64(tile.Z+1) / 3
 	centerX, centerY := int(point.Coordinates.X), int(point.Coordinates.Y)
 
+	rotation := fmt.Sprintf("rotate(%v,%v,%v)", object.Azimut, centerX, centerY)
+	canvas.Gtransform(rotation)
 	strokeWidth := float64(radius) / float64(100)
 	xs, ys := getBeamDiagramPoints(centerX, centerY, int(object.BeamWidth), object.Sidelobes, radius)
 	templateStyle := "stroke:%v; stroke-width:%v; fill: none;"
 	canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
-
+	canvas.Gend()
 	return nil
 }
 
