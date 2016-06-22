@@ -28,6 +28,12 @@ func (text TextPrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 		text.Content = ""
 	}
 
+	if object.Position != "" {
+		text.Position = strings.Replace(text.Position, "${position}", object.Position, 1)
+	} else {
+		text.Position = "Bottom"
+	}
+
 	switch text.Position {
 	case "top":
 		xShift = -20
