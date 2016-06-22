@@ -87,6 +87,8 @@ func (gdb *GeometryDB) GetAllSpecialObject(tile *tiles.Tile) (mapObjects []entit
 		coalesce(need_show_azimuthal_grid, false), coalesce(beam_width, '0'), coalesce(sidelobes, '1'),
 		coalesce(azimut, '1'), coalesce(distance, '0'), coalesce(need_show_directional_diagram, 'false'), coalesce(text_position, 'bottom') from %s 
 		WHERE (type_id BETWEEN 149 AND 165) OR (type_id IN (47,74)) and
+		(min_zoom <= %v or min_zoom is null) and
+		(max_zoom >= %v or max_zoom is null) and
 		ST_Intersects(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom);`, gdb.geomcol, gdb.geomtable, tile.Z, tile.Z, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South)
 
 	rows, err := gdb.conn.Query(q)
