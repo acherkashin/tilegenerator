@@ -42,6 +42,12 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 				RenderPatrollingArea(canvas, &object, tile)
 			} else if object.TypeID == 74 || (object.TypeID >= 174 && object.TypeID <= 183) {
 				RenderRouteAviationFlight(canvas, &object, tile)
+			} else if object.TypeID == 408 {
+				RenderPlannedAttackMainDirection(canvas, &object, tile)
+			} else if object.TypeID == 407 {
+				RenderAttackMainDirection(canvas, &object, tile)
+			} else if object.TypeID == 366 {
+				RenderCompletedProvideAction(canvas, &object, tile)
 			}
 		}
 	}
@@ -63,6 +69,13 @@ type patrollingArea struct {
 	distance                        float64
 	leftArrowXs, leftArrowYs        []int
 	rightArrowXs, rightArrowYs      []int
+}
+
+type bigArrow struct {
+	pointXs, pointYs, arrowXs, arrowYs []int
+	centerX, centerY                   int
+
+	rotateAngel float64
 }
 
 func newPatrollingArea(tile *Tile, coords []geometry.Coord, firstIndex int) *patrollingArea {
@@ -94,6 +107,39 @@ func newPatrollingArea(tile *Tile, coords []geometry.Coord, firstIndex int) *pat
 		rightArrowXs:    rightArrowXs,
 		rightArrowYs:    rightArrowYs,
 		rotateAngel:     getAngel(x1, y1, x2, y2),
+	}
+}
+
+func newBigArrow(tile *Tile, coords []geometry.Coord) *bigArrow {
+	x1, y1 := int(coords[0].X), int(coords[0].Y)
+	x2, y2 := int(coords[1].X), int(coords[1].Y)
+
+	centerX, centerY := getLineCenter(x1, y1, x2, y2)
+	distance := distanceBeetweenPoints(x1, y1, x2, y2)
+	sizeEdgeArrow := int(distance / 10)
+
+	line1X1, line1Y1 := centerX+int(distance/2), centerY+sizeEdgeArrow/2/3
+	line1X2, line1Y2 := centerX-int(distance/2), centerY+sizeEdgeArrow/2
+
+	line2X1, line2Y1 := centerX+int(distance/2), centerY-sizeEdgeArrow/2/3
+	line2X2, line2Y2 := centerX-int(distance/2), centerY-sizeEdgeArrow/2
+
+	rightLinePointX, rightLinePointY := centerX+int(distance/2), centerY
+
+	arrowXs := []int{rightLinePointX, rightLinePointX + int(math.Sqrt(3)/2.0*float64(sizeEdgeArrow)), rightLinePointX}
+	arrowYs := []int{rightLinePointY + sizeEdgeArrow/2, rightLinePointY, rightLinePointY - sizeEdgeArrow/2}
+
+	pointXs := []int{line1X2, line1X1, arrowXs[0], arrowXs[1], arrowXs[2], line2X1, line2X2}
+	pointYs := []int{line1Y2, line1Y1, arrowYs[0], arrowYs[1], arrowYs[2], line2Y1, line2Y2}
+
+	return &bigArrow{
+		centerX:     centerX,
+		centerY:     centerY,
+		pointXs:     pointXs,
+		pointYs:     pointYs,
+		arrowXs:     arrowXs,
+		arrowYs:     arrowYs,
+		rotateAngel: getAngel(x1, y1, x2, y2) + 180,
 	}
 }
 
@@ -243,6 +289,53 @@ func getMax(chartPoints []*chartPoint) float64 {
 	}
 
 	return max
+}
+
+func RenderAttackMainDirection(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	weight := 1
+
+	styleLine := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none; ", weight)
+	styleArrow := fmt.Sprintf("stroke:red; stroke-width: %v; fill: red; ", weight)
+
+	return renderBigArrow(canvas, object, tile, styleLine, styleArrow)
+}
+
+func RenderPlannedAttackMainDirection(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	weight := 1
+
+	styleLine := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none;stroke-dasharray: 10;", weight)
+	styleArrow := fmt.Sprintf("stroke:red; stroke-width: %v; fill: red;", weight)
+
+	return renderBigArrow(canvas, object, tile, styleLine, styleArrow)
+}
+
+func RenderCompletedProvideAction(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	weight := 1
+
+	styleLine := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none;", weight)
+	styleArrow := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none; ", weight)
+
+	return renderBigArrow(canvas, object, tile, styleLine, styleArrow)
+}
+
+func renderBigArrow(canvas *svg.SVG, object *entities.MapObject, tile *Tile, styleLine, styleArrow string) error {
+	line, err := object.Geometry.AsLineString()
+	if err != nil {
+		return err
+	}
+
+	direction := newBigArrow(tile, line.Coordinates)
+
+	transformationStyle := fmt.Sprintf("rotate(%v,%v,%v)", direction.rotateAngel, direction.centerX, direction.centerY)
+
+	canvas.Gtransform(transformationStyle)
+
+	canvas.Polyline(direction.arrowXs, direction.arrowYs, styleArrow)
+	canvas.Polyline(direction.pointXs, direction.pointYs, styleLine)
+
+	canvas.Gend()
+
+	return nil
 }
 
 // RenderRouteAviationFlight renders an aviation route on a tile
