@@ -7,28 +7,18 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"sync"
 )
 
-var loadedImages = make(map[string][]byte)
-var mutex sync.Mutex
-
 func GetImgByURL(url string) ([]byte, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
-	if val, ok := loadedImages[url]; ok {
-		return val, nil
-	} else {
-		if resp, err := http.Get(url); err == nil {
-			if result, readErr := ioutil.ReadAll(resp.Body); readErr == nil {
-				loadedImages[url] = result
-				return result, nil
-			} else {
-				return nil, errors.New("Can't read bytes from image loading response")
-			}
+	if resp, err := http.Get(url); err == nil {
+		defer resp.Body.Close()
+		if result, readErr := ioutil.ReadAll(resp.Body); readErr == nil {
+			return result, nil
 		} else {
-			return nil, errors.New("Can't load img")
+			return nil, errors.New("Can't read bytes from image loading response")
 		}
+	} else {
+		return nil, errors.New("Can't load img")
 	}
 }
 
