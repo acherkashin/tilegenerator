@@ -38,17 +38,19 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 				if object.NeedShowAzimuthalGrid {
 					RenderAzimuthalGrid(canvas, &object, tile)
 				}
-			} else if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
-				RenderPatrollingArea(canvas, &object, tile)
-			} else if object.TypeID == 74 || (object.TypeID >= 174 && object.TypeID <= 183) {
-				RenderRouteAviationFlight(canvas, &object, tile)
-			} else if object.TypeID == 408 {
-				RenderPlannedAttackMainDirection(canvas, &object, tile)
-			} else if object.TypeID == 407 {
-				RenderAttackMainDirection(canvas, &object, tile)
-			} else if object.TypeID == 366 {
-				RenderCompletedProvideAction(canvas, &object, tile)
 			}
+		}
+
+		if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
+			RenderPatrollingArea(canvas, &object, tile)
+		} else if object.TypeID == 74 || (object.TypeID >= 174 && object.TypeID <= 183) {
+			RenderRouteAviationFlight(canvas, &object, tile)
+		} else if object.TypeID == 408 {
+			RenderPlannedAttackMainDirection(canvas, &object, tile)
+		} else if object.TypeID == 407 {
+			RenderAttackMainDirection(canvas, &object, tile)
+		} else if object.TypeID == 366 {
+			RenderCompletedProvideAction(canvas, &object, tile)
 		}
 	}
 
@@ -292,30 +294,48 @@ func getMax(chartPoints []*chartPoint) float64 {
 }
 
 func RenderAttackMainDirection(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	if object.ColorInner == "" {
+		object.ColorInner = "red"
+	}
+
+	if object.ColorOuter == "" {
+		object.ColorOuter = "red"
+	}
+
 	weight := 1
 
-	styleLine := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none; ", weight)
-	styleArrow := fmt.Sprintf("stroke:red; stroke-width: %v; fill: red; ", weight)
+	styleLine := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.ColorOuter, weight)
+	styleArrow := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: %v;", object.ColorOuter, weight, object.ColorInner)
 
 	return renderBigArrow(canvas, object, tile, styleLine, styleArrow)
 }
 
 func RenderPlannedAttackMainDirection(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	if object.ColorInner == "" {
+		object.ColorInner = "red"
+	}
+
+	if object.ColorOuter == "" {
+		object.ColorOuter = "red"
+	}
+
 	weight := 1
 
-	styleLine := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none;stroke-dasharray: 10;", weight)
-	styleArrow := fmt.Sprintf("stroke:red; stroke-width: %v; fill: red;", weight)
+	styleLine := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;stroke-dasharray: 10;", object.ColorOuter, weight)
+	styleArrow := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: %v;", object.ColorOuter, weight, object.ColorInner)
 
 	return renderBigArrow(canvas, object, tile, styleLine, styleArrow)
 }
 
 func RenderCompletedProvideAction(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
 	weight := 1
+	if object.ColorOuter != "" {
+		object.ColorOuter = "red"
+	}
 
-	styleLine := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none;", weight)
-	styleArrow := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none; ", weight)
+	style := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.ColorOuter, weight)
 
-	return renderBigArrow(canvas, object, tile, styleLine, styleArrow)
+	return renderBigArrow(canvas, object, tile, style, style)
 }
 
 func renderBigArrow(canvas *svg.SVG, object *entities.MapObject, tile *Tile, styleLine, styleArrow string) error {
@@ -346,14 +366,28 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	}
 
 	coords := line.Coordinates
-	weight := 1
-	lengthArrow := 5.0
-	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
-	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
+
 	canvas.Group()
 
+	renderPathRouteAviationFlight(coords, canvas, object, tile)
+	renderArrowRouteAviationFlight(coords, canvas, object, tile)
+
+	canvas.Gend()
+	return nil
+}
+
+func renderPathRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, object *entities.MapObject, tile *Tile) {
 	fullLength := getLengthPolyline(coords, tile) / 2
 	alreadyDrawn := false
+	weight := 1
+
+	var style string
+
+	if object.ColorOuter != "" {
+		style = fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.ColorOuter, weight)
+	} else {
+		style = fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
+	}
 
 	var i int
 	for i = 0; i < len(coords)-1; i++ {
@@ -372,17 +406,26 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 		}
 	}
 
-	i--
+}
 
+func renderArrowRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, object *entities.MapObject, tile *Tile) {
+	lengthArrow := 5.0
+	weight := 1
+	i := len(coords) - 2
 	lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
 
+	var styleArrow string
+	if object.ColorOuter != "" {
+		styleArrow = fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.ColorOuter, weight)
+	} else {
+		styleArrow = fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
+	}
+
 	if lineLength > lengthArrow {
-		xs, ys := GetArrowPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z)
+		xs, ys := getArrowRouteAviationFlight(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z)
 		canvas.Polyline(xs, ys, styleArrow)
 	}
 
-	canvas.Gend()
-	return nil
 }
 
 /*
@@ -395,10 +438,17 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 	}
 	coords := line.Coordinates
 	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
-	canvas.CSS(`line, path {
+	if object.ColorOuter == "" {
+		canvas.CSS(`line, path, polyline {
 			fill: none;
 			stroke: black;
 			}`)
+	} else {
+		canvas.CSS(fmt.Sprintf(`line, path, polyline {
+			fill: none;
+			stroke: %v;
+			}`, object.ColorOuter))
+	}
 
 	fullLength := getLengthPolyline(coords, tile) / 2
 	alreadyDrawn := false
@@ -505,7 +555,7 @@ func getLengthPolyline(coords []geometry.Coord, tile *Tile) float64 {
 	return sum
 }
 
-func GetArrowPoints(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
+func getArrowRouteAviationFlight(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
 	var angel int
 	var centerX, centerY, rotatedPointX, rotatedPointY int
 	distance := distanceBeetweenPoints(BeginX, BeginY, EndX, EndY)
@@ -551,12 +601,16 @@ func RenderBeamDiagram(canvas *svg.SVG, object *entities.MapObject, tile *Tile) 
 	strokeWidth := float64(radius) / float64(100)
 	xs, ys := getBeamDiagramPoints(centerX, centerY, int(object.BeamWidth), object.Sidelobes, radius)
 	templateStyle := "stroke:%v; stroke-width:%v; fill: none;"
-	canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
+	if object.ColorOuter != "" {
+		canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, object.ColorOuter, strokeWidth))
+	} else {
+		canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
+	}
 	canvas.Gend()
 	return nil
 }
 
-//RenderPolarGrid ...
+//RenderAzimuthalGrid ...
 func RenderAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
 	point, err := object.Geometry.AsPoint()
 	if err != nil {
@@ -573,9 +627,17 @@ func RenderAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, tile *Tile
 
 	polarGridXs, polarGridYs := getPointsForPolarGrid(centerX, centerY, radius)
 
-	for i := 0; i < len(polarGridXs); i++ {
-		canvas.Line(centerX, centerY, polarGridXs[i], polarGridYs[i], fmt.Sprintf(templateStyle, "gray", strokeWidth))
+	var styleAzimuthalGrid string
+	if object.ColorInner == "" {
+		styleAzimuthalGrid = fmt.Sprintf(templateStyle, "gray", strokeWidth)
+	} else {
+		styleAzimuthalGrid = fmt.Sprintf(templateStyle, object.ColorInner, strokeWidth)
 	}
+
+	for i := 0; i < len(polarGridXs); i++ {
+		canvas.Line(centerX, centerY, polarGridXs[i], polarGridYs[i], styleAzimuthalGrid)
+	}
+
 	indexZeroAzimut := 18
 	canvas.Line(centerX, centerY, polarGridXs[indexZeroAzimut], polarGridYs[indexZeroAzimut], fmt.Sprintf(templateStyle, "red", strokeWidth))
 

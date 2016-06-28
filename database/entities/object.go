@@ -23,10 +23,12 @@ type MapObject struct {
 	Azimut                     float64
 	Distance                   float64
 	NeedShowDirectionalDiagram bool
+	ColorOuter                 string
+	ColorInner                 string
 }
 
 // NewObject creates new MapObject with a parsed from WKT geometry
-func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid, needShowDirectionalDiagram bool, beamWidth, sidelobes, azimut, distance float64) (*MapObject, error) {
+func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid, needShowDirectionalDiagram bool, beamWidth, sidelobes, azimut, distance float64, colorOuter, colorInner string) (*MapObject, error) {
 	geo, err := wktparser.Parse(wkt)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -43,5 +45,7 @@ func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid,
 		Sidelobes:                  sidelobes,
 		Azimut:                     azimut,
 		Distance:                   distance,
-		NeedShowDirectionalDiagram: needShowDirectionalDiagram}, nil
+		NeedShowDirectionalDiagram: needShowDirectionalDiagram,
+		ColorOuter:                 colorOuter,
+		ColorInner:                 colorInner}, nil
 }
