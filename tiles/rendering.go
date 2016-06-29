@@ -40,6 +40,7 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 				}
 			}
 		}
+		object.TypeID = 181
 
 		if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
 			RenderPatrollingArea(canvas, &object, tile)
@@ -51,6 +52,8 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 			RenderAttackMainDirection(canvas, &object, tile)
 		} else if object.TypeID == 366 {
 			RenderCompletedProvideAction(canvas, &object, tile)
+		} else if object.TypeID == 432 {
+			RenderPit(canvas, &object, tile)
 		}
 	}
 
@@ -291,6 +294,47 @@ func getMax(chartPoints []*chartPoint) float64 {
 	}
 
 	return max
+}
+
+func RenderPit(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	line, err := object.Geometry.AsLineString()
+	if err != nil {
+		return err
+	}
+
+	coords := line.Coordinates
+	weight := 1
+	if object.ColorOuter == "" {
+		object.ColorOuter = "black"
+	}
+
+	style := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.ColorOuter, weight)
+
+	for i := 0; i < len(coords)-1; i++ {
+		canvas.Line(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
+		drawSegmentation(canvas, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
+	}
+
+	return nil
+}
+
+func drawSegmentation(canvas *svg.SVG, beginX, beginY, endX, endY int, style string) {
+	length := 8
+	distance := distanceBeetweenPoints(beginX, beginY, endX, endY)
+	percentSizeSegment := float64(length) / distance
+	count := int(distance) / length
+
+	currentPointPercent := percentSizeSegment
+	for i := 0; i < count-1; i += 2 {
+		x1, y1 := equationLineByTwoPoints(beginX, beginY, endX, endY, currentPointPercent)
+		currentPointPercent += percentSizeSegment
+		x2, y2 := equationLineByTwoPoints(beginX, beginY, endX, endY, currentPointPercent)
+		currentPointPercent += percentSizeSegment
+
+		resultX, resultY := RotatePoint(x1, y1, x2, y2, -90)
+
+		canvas.Line(x1, y1, resultX, resultY, style)
+	}
 }
 
 func RenderAttackMainDirection(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
@@ -557,14 +601,11 @@ func getLengthPolyline(coords []geometry.Coord, tile *Tile) float64 {
 
 func getArrowRouteAviationFlight(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
 	var angel int
-	var centerX, centerY, rotatedPointX, rotatedPointY int
 	distance := distanceBeetweenPoints(BeginX, BeginY, EndX, EndY)
 	percentSize := 1 - 5.0/distance
 	angel = 120
-	centerX = BeginX + (int)((float64)(EndX-BeginX)*percentSize)
-	centerY = BeginY + (int)((float64)(EndY-BeginY)*percentSize)
-	rotatedPointX = EndX
-	rotatedPointY = EndY
+	centerX, centerY := equationLineByTwoPoints(BeginX, BeginY, EndX, EndY, percentSize)
+	rotatedPointX, rotatedPointY := EndX, EndY
 
 	p1X, p1Y := RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, angel)
 	p2X, p2Y := RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, -angel)
@@ -572,6 +613,13 @@ func getArrowRouteAviationFlight(BeginX, BeginY, EndX, EndY, zoom int) ([]int, [
 	xs := []int{p1X, rotatedPointX, p2X}
 	ys := []int{p1Y, rotatedPointY, p2Y}
 	return xs, ys
+}
+
+func equationLineByTwoPoints(BeginX, BeginY, EndX, EndY int, percentSize float64) (pointX, pointY int) {
+	pointX = BeginX + (int)((float64)(EndX-BeginX)*percentSize)
+	pointY = BeginY + (int)((float64)(EndY-BeginY)*percentSize)
+
+	return pointX, pointY
 }
 
 func RotatePoint(centerX, centerY, pointX, pointY, angel int) (x, y int) {
