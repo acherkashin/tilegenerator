@@ -40,7 +40,7 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 				}
 			}
 		}
-		object.TypeID = 181
+		object.TypeID = 74
 
 		if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
 			RenderPatrollingArea(canvas, &object, tile)
@@ -410,7 +410,9 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	}
 
 	coords := line.Coordinates
+	setDefaultColor(object)
 
+	object.ColorInner = "red"
 	canvas.Group()
 
 	renderPathRouteAviationFlight(coords, canvas, object, tile)
@@ -427,11 +429,7 @@ func renderPathRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, obj
 
 	var style string
 
-	if object.ColorOuter != "" {
-		style = fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.ColorOuter, weight)
-	} else {
-		style = fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
-	}
+	style = fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.ColorOuter, weight)
 
 	var i int
 	for i = 0; i < len(coords)-1; i++ {
@@ -458,18 +456,12 @@ func renderArrowRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, ob
 	i := len(coords) - 2
 	lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
 
-	var styleArrow string
-	if object.ColorOuter != "" {
-		styleArrow = fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.ColorOuter, weight)
-	} else {
-		styleArrow = fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
-	}
+	styleArrow := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: %v;", object.ColorInner, weight, object.ColorInner)
 
 	if lineLength > lengthArrow {
 		xs, ys := getArrowRouteAviationFlight(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z)
 		canvas.Polyline(xs, ys, styleArrow)
 	}
-
 }
 
 /*
@@ -481,18 +473,10 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 		return err
 	}
 	coords := line.Coordinates
+
+	setDefaultColor(object)
+
 	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
-	if object.ColorOuter == "" {
-		canvas.CSS(`line, path, polyline {
-			fill: none;
-			stroke: black;
-			}`)
-	} else {
-		canvas.CSS(fmt.Sprintf(`line, path, polyline {
-			fill: none;
-			stroke: %v;
-			}`, object.ColorOuter))
-	}
 
 	fullLength := getLengthPolyline(coords, tile) / 2
 	alreadyDrawn := false
@@ -517,32 +501,50 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 			}
 		}
 
-		canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY)
+		canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY, fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
 		if i == 0 {
-			canvas.Polyline(area.rightArrowXs, area.rightArrowYs)
-			canvas.Arc(area.rightLinePointX,
-				area.rightLinePointY,
-				area.radiusX,
-				area.radiusY,
-				0, false, true,
-				area.rightLinePointX,
-				area.rightLinePointY+int(2*area.radiusY))
+			renderRightPartPatrollingArea(canvas, area, object)
 		}
 
 		if i == len(coords)-2 {
-			canvas.Polyline(area.leftArrowXs, area.leftArrowYs)
-			canvas.Arc(area.leftLinePointX,
-				area.leftLinePointY,
-				area.radiusX,
-				area.radiusY,
-				0, false, true,
-				area.leftLinePointX,
-				area.leftLinePointY-int(2*area.radiusY))
+			renderLeftPartPatrollingArea(canvas, area, object)
 		}
 		canvas.Gend()
 	}
 	canvas.Gend()
 	return nil
+}
+func renderRightPartPatrollingArea(canvas *svg.SVG, area *patrollingArea, object *entities.MapObject) {
+	canvas.Arc(area.rightLinePointX,
+		area.rightLinePointY,
+		area.radiusX,
+		area.radiusY,
+		0, false, true,
+		area.rightLinePointX,
+		area.rightLinePointY+int(2*area.radiusY),
+		fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
+	canvas.Polyline(area.rightArrowXs, area.rightArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", object.ColorInner, object.ColorInner))
+}
+
+func renderLeftPartPatrollingArea(canvas *svg.SVG, area *patrollingArea, object *entities.MapObject) {
+	canvas.Arc(area.leftLinePointX,
+		area.leftLinePointY,
+		area.radiusX,
+		area.radiusY,
+		0, false, true,
+		area.leftLinePointX,
+		area.leftLinePointY-int(2*area.radiusY),
+		fmt.Sprintf("stroke: %v; fill: none", object.ColorOuter))
+	canvas.Polyline(area.leftArrowXs, area.leftArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", object.ColorInner, object.ColorInner))
+}
+
+func setDefaultColor(object *entities.MapObject) {
+	if object.ColorInner == "" {
+		object.ColorInner = "black"
+	}
+	if object.ColorOuter == "" {
+		object.ColorOuter = "black"
+	}
 }
 
 func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, x, y float64, zoom int) {
