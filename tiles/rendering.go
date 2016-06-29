@@ -40,7 +40,6 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 				}
 			}
 		}
-		object.TypeID = 74
 
 		if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
 			RenderPatrollingArea(canvas, &object, tile)
@@ -412,7 +411,6 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	coords := line.Coordinates
 	setDefaultColor(object)
 
-	object.ColorInner = "red"
 	canvas.Group()
 
 	renderPathRouteAviationFlight(coords, canvas, object, tile)
