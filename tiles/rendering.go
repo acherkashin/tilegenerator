@@ -38,17 +38,21 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 				if object.NeedShowAzimuthalGrid {
 					RenderAzimuthalGrid(canvas, &object, tile)
 				}
-			} else if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
-				RenderPatrollingArea(canvas, &object, tile)
-			} else if object.TypeID == 74 || (object.TypeID >= 174 && object.TypeID <= 183) {
-				RenderRouteAviationFlight(canvas, &object, tile)
-			} else if object.TypeID == 408 {
-				RenderPlannedAttackMainDirection(canvas, &object, tile)
-			} else if object.TypeID == 407 {
-				RenderAttackMainDirection(canvas, &object, tile)
-			} else if object.TypeID == 366 {
-				RenderCompletedProvideAction(canvas, &object, tile)
 			}
+		}
+
+		if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
+			RenderPatrollingArea(canvas, &object, tile)
+		} else if object.TypeID == 74 || (object.TypeID >= 174 && object.TypeID <= 183) {
+			RenderRouteAviationFlight(canvas, &object, tile)
+		} else if object.TypeID == 408 {
+			RenderPlannedAttackMainDirection(canvas, &object, tile)
+		} else if object.TypeID == 407 {
+			RenderAttackMainDirection(canvas, &object, tile)
+		} else if object.TypeID == 366 {
+			RenderCompletedProvideAction(canvas, &object, tile)
+		} else if object.TypeID == 432 {
+			RenderPit(canvas, &object, tile)
 		}
 	}
 
@@ -291,31 +295,90 @@ func getMax(chartPoints []*chartPoint) float64 {
 	return max
 }
 
+func RenderPit(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	line, err := object.Geometry.AsLineString()
+	if err != nil {
+		return err
+	}
+
+	coords := line.Coordinates
+	weight := 1
+	if object.ColorOuter == "" {
+		object.ColorOuter = "black"
+	}
+
+	style := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.ColorOuter, weight)
+
+	for i := 0; i < len(coords)-1; i++ {
+		canvas.Line(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
+		drawSegmentation(canvas, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
+	}
+
+	return nil
+}
+
+func drawSegmentation(canvas *svg.SVG, beginX, beginY, endX, endY int, style string) {
+	length := 8
+	distance := distanceBeetweenPoints(beginX, beginY, endX, endY)
+	percentSizeSegment := float64(length) / distance
+	count := int(distance) / length
+
+	currentPointPercent := percentSizeSegment
+	for i := 0; i < count-1; i += 2 {
+		x1, y1 := equationLineByTwoPoints(beginX, beginY, endX, endY, currentPointPercent)
+		currentPointPercent += percentSizeSegment
+		x2, y2 := equationLineByTwoPoints(beginX, beginY, endX, endY, currentPointPercent)
+		currentPointPercent += percentSizeSegment
+
+		resultX, resultY := RotatePoint(x1, y1, x2, y2, -90)
+
+		canvas.Line(x1, y1, resultX, resultY, style)
+	}
+}
+
 func RenderAttackMainDirection(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	if object.ColorInner == "" {
+		object.ColorInner = "red"
+	}
+
+	if object.ColorOuter == "" {
+		object.ColorOuter = "red"
+	}
+
 	weight := 1
 
-	styleLine := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none; ", weight)
-	styleArrow := fmt.Sprintf("stroke:red; stroke-width: %v; fill: red; ", weight)
+	styleLine := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.ColorOuter, weight)
+	styleArrow := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: %v;", object.ColorOuter, weight, object.ColorInner)
 
 	return renderBigArrow(canvas, object, tile, styleLine, styleArrow)
 }
 
 func RenderPlannedAttackMainDirection(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	if object.ColorInner == "" {
+		object.ColorInner = "red"
+	}
+
+	if object.ColorOuter == "" {
+		object.ColorOuter = "red"
+	}
+
 	weight := 1
 
-	styleLine := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none;stroke-dasharray: 10;", weight)
-	styleArrow := fmt.Sprintf("stroke:red; stroke-width: %v; fill: red;", weight)
+	styleLine := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;stroke-dasharray: 10;", object.ColorOuter, weight)
+	styleArrow := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: %v;", object.ColorOuter, weight, object.ColorInner)
 
 	return renderBigArrow(canvas, object, tile, styleLine, styleArrow)
 }
 
 func RenderCompletedProvideAction(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
 	weight := 1
+	if object.ColorOuter != "" {
+		object.ColorOuter = "red"
+	}
 
-	styleLine := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none;", weight)
-	styleArrow := fmt.Sprintf("stroke:red; stroke-width: %v; fill: none; ", weight)
+	style := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.ColorOuter, weight)
 
-	return renderBigArrow(canvas, object, tile, styleLine, styleArrow)
+	return renderBigArrow(canvas, object, tile, style, style)
 }
 
 func renderBigArrow(canvas *svg.SVG, object *entities.MapObject, tile *Tile, styleLine, styleArrow string) error {
@@ -346,14 +409,25 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	}
 
 	coords := line.Coordinates
-	weight := 1
-	lengthArrow := 5.0
-	style := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none; stroke-dasharray: 10;", weight)
-	styleArrow := fmt.Sprintf("stroke:black; stroke-width: %v; fill: none;", weight)
+	setDefaultColor(object)
+
 	canvas.Group()
 
+	renderPathRouteAviationFlight(coords, canvas, object, tile)
+	renderArrowRouteAviationFlight(coords, canvas, object, tile)
+
+	canvas.Gend()
+	return nil
+}
+
+func renderPathRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, object *entities.MapObject, tile *Tile) {
 	fullLength := getLengthPolyline(coords, tile) / 2
 	alreadyDrawn := false
+	weight := 1
+
+	var style string
+
+	style = fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.ColorOuter, weight)
 
 	var i int
 	for i = 0; i < len(coords)-1; i++ {
@@ -372,17 +446,20 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 		}
 	}
 
-	i--
+}
 
+func renderArrowRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, object *entities.MapObject, tile *Tile) {
+	lengthArrow := 5.0
+	weight := 1
+	i := len(coords) - 2
 	lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
 
+	styleArrow := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: %v;", object.ColorInner, weight, object.ColorInner)
+
 	if lineLength > lengthArrow {
-		xs, ys := GetArrowPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z)
+		xs, ys := getArrowRouteAviationFlight(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z)
 		canvas.Polyline(xs, ys, styleArrow)
 	}
-
-	canvas.Gend()
-	return nil
 }
 
 /*
@@ -394,11 +471,10 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 		return err
 	}
 	coords := line.Coordinates
+
+	setDefaultColor(object)
+
 	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
-	canvas.CSS(`line, path {
-			fill: none;
-			stroke: black;
-			}`)
 
 	fullLength := getLengthPolyline(coords, tile) / 2
 	alreadyDrawn := false
@@ -423,32 +499,50 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 			}
 		}
 
-		canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY)
+		canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY, fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
 		if i == 0 {
-			canvas.Polyline(area.rightArrowXs, area.rightArrowYs)
-			canvas.Arc(area.rightLinePointX,
-				area.rightLinePointY,
-				area.radiusX,
-				area.radiusY,
-				0, false, true,
-				area.rightLinePointX,
-				area.rightLinePointY+int(2*area.radiusY))
+			renderRightPartPatrollingArea(canvas, area, object)
 		}
 
 		if i == len(coords)-2 {
-			canvas.Polyline(area.leftArrowXs, area.leftArrowYs)
-			canvas.Arc(area.leftLinePointX,
-				area.leftLinePointY,
-				area.radiusX,
-				area.radiusY,
-				0, false, true,
-				area.leftLinePointX,
-				area.leftLinePointY-int(2*area.radiusY))
+			renderLeftPartPatrollingArea(canvas, area, object)
 		}
 		canvas.Gend()
 	}
 	canvas.Gend()
 	return nil
+}
+func renderRightPartPatrollingArea(canvas *svg.SVG, area *patrollingArea, object *entities.MapObject) {
+	canvas.Arc(area.rightLinePointX,
+		area.rightLinePointY,
+		area.radiusX,
+		area.radiusY,
+		0, false, true,
+		area.rightLinePointX,
+		area.rightLinePointY+int(2*area.radiusY),
+		fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
+	canvas.Polyline(area.rightArrowXs, area.rightArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", object.ColorInner, object.ColorInner))
+}
+
+func renderLeftPartPatrollingArea(canvas *svg.SVG, area *patrollingArea, object *entities.MapObject) {
+	canvas.Arc(area.leftLinePointX,
+		area.leftLinePointY,
+		area.radiusX,
+		area.radiusY,
+		0, false, true,
+		area.leftLinePointX,
+		area.leftLinePointY-int(2*area.radiusY),
+		fmt.Sprintf("stroke: %v; fill: none", object.ColorOuter))
+	canvas.Polyline(area.leftArrowXs, area.leftArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", object.ColorInner, object.ColorInner))
+}
+
+func setDefaultColor(object *entities.MapObject) {
+	if object.ColorInner == "" {
+		object.ColorInner = "black"
+	}
+	if object.ColorOuter == "" {
+		object.ColorOuter = "black"
+	}
 }
 
 func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, x, y float64, zoom int) {
@@ -505,16 +599,13 @@ func getLengthPolyline(coords []geometry.Coord, tile *Tile) float64 {
 	return sum
 }
 
-func GetArrowPoints(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
+func getArrowRouteAviationFlight(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
 	var angel int
-	var centerX, centerY, rotatedPointX, rotatedPointY int
 	distance := distanceBeetweenPoints(BeginX, BeginY, EndX, EndY)
 	percentSize := 1 - 5.0/distance
 	angel = 120
-	centerX = BeginX + (int)((float64)(EndX-BeginX)*percentSize)
-	centerY = BeginY + (int)((float64)(EndY-BeginY)*percentSize)
-	rotatedPointX = EndX
-	rotatedPointY = EndY
+	centerX, centerY := equationLineByTwoPoints(BeginX, BeginY, EndX, EndY, percentSize)
+	rotatedPointX, rotatedPointY := EndX, EndY
 
 	p1X, p1Y := RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, angel)
 	p2X, p2Y := RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, -angel)
@@ -522,6 +613,13 @@ func GetArrowPoints(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
 	xs := []int{p1X, rotatedPointX, p2X}
 	ys := []int{p1Y, rotatedPointY, p2Y}
 	return xs, ys
+}
+
+func equationLineByTwoPoints(BeginX, BeginY, EndX, EndY int, percentSize float64) (pointX, pointY int) {
+	pointX = BeginX + (int)((float64)(EndX-BeginX)*percentSize)
+	pointY = BeginY + (int)((float64)(EndY-BeginY)*percentSize)
+
+	return pointX, pointY
 }
 
 func RotatePoint(centerX, centerY, pointX, pointY, angel int) (x, y int) {
@@ -551,12 +649,16 @@ func RenderBeamDiagram(canvas *svg.SVG, object *entities.MapObject, tile *Tile) 
 	strokeWidth := float64(radius) / float64(100)
 	xs, ys := getBeamDiagramPoints(centerX, centerY, int(object.BeamWidth), object.Sidelobes, radius)
 	templateStyle := "stroke:%v; stroke-width:%v; fill: none;"
-	canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
+	if object.ColorOuter != "" {
+		canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, object.ColorOuter, strokeWidth))
+	} else {
+		canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
+	}
 	canvas.Gend()
 	return nil
 }
 
-//RenderPolarGrid ...
+//RenderAzimuthalGrid ...
 func RenderAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
 	point, err := object.Geometry.AsPoint()
 	if err != nil {
@@ -573,9 +675,17 @@ func RenderAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, tile *Tile
 
 	polarGridXs, polarGridYs := getPointsForPolarGrid(centerX, centerY, radius)
 
-	for i := 0; i < len(polarGridXs); i++ {
-		canvas.Line(centerX, centerY, polarGridXs[i], polarGridYs[i], fmt.Sprintf(templateStyle, "gray", strokeWidth))
+	var styleAzimuthalGrid string
+	if object.ColorInner == "" {
+		styleAzimuthalGrid = fmt.Sprintf(templateStyle, "gray", strokeWidth)
+	} else {
+		styleAzimuthalGrid = fmt.Sprintf(templateStyle, object.ColorInner, strokeWidth)
 	}
+
+	for i := 0; i < len(polarGridXs); i++ {
+		canvas.Line(centerX, centerY, polarGridXs[i], polarGridYs[i], styleAzimuthalGrid)
+	}
+
 	indexZeroAzimut := 18
 	canvas.Line(centerX, centerY, polarGridXs[indexZeroAzimut], polarGridYs[indexZeroAzimut], fmt.Sprintf(templateStyle, "red", strokeWidth))
 
