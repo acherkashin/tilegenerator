@@ -33,7 +33,6 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 
 	if parseErr := req.ParseForm(); parseErr == nil {
 		situations = req.Form.Get("situations")
-		fmt.Println(situations)
 	}
 
 	x, errX := strconv.Atoi(vars["x"])
