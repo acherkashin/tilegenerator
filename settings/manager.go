@@ -3,9 +3,10 @@ package settings
 import (
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/TerraFactory/tilegenerator/utils"
 	"github.com/pelletier/go-toml"
-	"sync"
 )
 
 // Settings is a singleton object, which contains configuration of a tile server
@@ -16,6 +17,7 @@ type Settings struct {
 	DBInstanceName     string
 	HTTPPort           string
 	StylesDirectory    string
+	UrlAPI             string
 }
 
 var instance *Settings
@@ -37,6 +39,7 @@ func readSettings(conf_path *string) (*Settings, error) {
 			DBInstanceName:     config.Get("database.instance_name").(string),
 			HTTPPort:           config.Get("http.port").(string),
 			StylesDirectory:    config.Get("styles.directory").(string),
+			UrlAPI:             config.Get("api.url").(string),
 		}
 	}
 	return &settings, nil

@@ -25,6 +25,7 @@ type MapObject struct {
 	NeedShowDirectionalDiagram bool
 	ColorOuter                 string
 	ColorInner                 string
+	Hash                       string
 }
 
 // NewObject creates new MapObject with a parsed from WKT geometry
