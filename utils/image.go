@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -22,25 +21,24 @@ func GetImgByURL(url string) ([]byte, error) {
 	}
 }
 
+func SaveImageToFile(path string, content []byte) error {
+	file, err := os.Create(path)
+	if err != nil {
+		fmt.Println(fmt.Sprintf("Can't save image, path: %v", path))
+		return err
+	}
+	defer file.Close()
+
+	file.Write(content)
+
+	return nil
+}
+
 func GetImgFromFile(path string) ([]byte, error) {
-	imgFile, err := os.Open(path)
-
-	if err == nil {
-
-		defer imgFile.Close()
-
-		// create a new buffer base on file size
-		fInfo, _ := imgFile.Stat()
-		size := fInfo.Size()
-		buf := make([]byte, size)
-
-		// read file content into buffer
-		fReader := bufio.NewReader(imgFile)
-		fReader.Read(buf)
-
-		return buf, err
+	bs, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
 	}
 
-	fmt.Println(err)
-	return nil, err
+	return bs, nil
 }
