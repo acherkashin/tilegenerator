@@ -16,6 +16,39 @@ import (
 	"github.com/TerraFactory/wktparser/geometry"
 )
 
+var routeAviationsFlightCodes = []string{
+	"121062001002010601010100000100",
+	"1210620050020106010002000100",
+	"1210620050030106010002000100",
+	"1210620050030106010003000100",
+	"12106200800201060102000100",
+	"1210620050020106010003000100",
+	"1000000004",
+	"121062003002010601000300010100",
+	"121062606030020801030001000000",
+	"121062010002010601000300010100",
+	"121062009002010601000300010100",
+}
+
+var patrollingAreaCodes = []string{
+	"912106200800201060102000100",
+	"9121062001002010601010100000100",
+	"9121062606030020801030001000000",
+	"91210620050020106010003000100",
+	"91210620050020106010002000100",
+	"9121062003002010601000300010100",
+	"91210620050030106010002000100",
+	"91210620050030106010003000100",
+	"9121062010002010601000300010100",
+	"9121062009002010601000300010100",
+	"1000000002",
+}
+
+var attackMainDirectionCode = "13147260003502080100010001"
+var plannedAttackMainDirectionCode = "13147260003502080100010003"
+var completedProvideActionCode = "13147260003502080100010002"
+var pitCode = "21056441215588"
+
 var hashTypes map[int]string
 
 // RenderTile takes a tile struct, map objects and then draws these objects on the tile
@@ -44,17 +77,17 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 			}
 		}
 
-		if object.TypeID == 47 || (object.TypeID >= 184 && object.TypeID <= 193) {
+		if contains(object.Code, patrollingAreaCodes) {
 			RenderPatrollingArea(canvas, &object, tile)
-		} else if object.TypeID == 74 || (object.TypeID >= 174 && object.TypeID <= 183) {
+		} else if contains(object.Code, routeAviationsFlightCodes) {
 			RenderRouteAviationFlight(canvas, &object, tile)
-		} else if object.TypeID == 408 {
+		} else if object.Code == plannedAttackMainDirectionCode {
 			RenderPlannedAttackMainDirection(canvas, &object, tile)
-		} else if object.TypeID == 407 {
+		} else if object.Code == attackMainDirectionCode {
 			RenderAttackMainDirection(canvas, &object, tile)
-		} else if object.TypeID == 366 {
+		} else if object.Code == completedProvideActionCode {
 			RenderCompletedProvideAction(canvas, &object, tile)
-		} else if object.TypeID == 432 {
+		} else if object.Code == pitCode {
 			RenderPit(canvas, &object, tile)
 		}
 	}
@@ -440,7 +473,7 @@ func renderPathRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, obj
 		lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
 		fullLength -= lineLength
 
-		if object.TypeID != 74 {
+		if object.Code != "1000000004" {
 			if fullLength <= 0 && !alreadyDrawn {
 				percentPosition := (-1.0) * fullLength / lineLength
 
@@ -722,4 +755,13 @@ func RenderAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, tile *Tile
 	canvas.Gend()
 
 	return nil
+}
+
+func contains(sample string, list []string) bool {
+	for _, b := range list {
+		if b == sample {
+			return true
+		}
+	}
+	return false
 }
