@@ -6,11 +6,13 @@ import (
 	"io/ioutil"
 	"sync"
 
+	"strings"
+
 	"github.com/TerraFactory/tilegenerator/settings"
+	"github.com/TerraFactory/tilegenerator/settings/styling/primitives"
 	"github.com/TerraFactory/tilegenerator/utils"
 	"github.com/TerraFactory/wktparser/geometry"
 	"github.com/pelletier/go-toml"
-	"strings"
 )
 
 var styles *map[string]Style
@@ -25,6 +27,7 @@ func parseType(t string) (int, error) {
 		return geometry.TMultiPoint, nil
 	case "LINE":
 	case "POLYLINE":
+		return geometry.TLineString, nil
 	case "LINESTRING":
 		return geometry.TLineString, nil
 	case "MULTILINE":
@@ -52,7 +55,7 @@ func readStylesFile(filename string) (*Style, error) {
 	prims := styles.Get("primitives").([]*toml.TomlTree)
 	for _, p := range prims {
 		t := p.Get("Type").(string)
-		primitive, _ := NewPrimitive(t, p.ToMap())
+		primitive, _ := primitives.NewPrimitive(t, p.ToMap())
 		style.Primitives = append(style.Primitives, primitive)
 	}
 	return &style, nil

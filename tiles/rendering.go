@@ -67,29 +67,29 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 			if style.ShouldRender(&object) {
 				style.Render(&object, canvas)
 
-				if object.IsAntenna && object.NeedShowDirectionalDiagram {
-					RenderBeamDiagram(canvas, &object, tile)
-				}
+				// if object.IsAntenna && object.NeedShowDirectionalDiagram {
+				// 	RenderBeamDiagram(canvas, &object, tile)
+				// }
 
-				if object.NeedShowAzimuthalGrid {
-					RenderAzimuthalGrid(canvas, &object, tile)
-				}
+				// if object.NeedShowAzimuthalGrid {
+				// 	RenderAzimuthalGrid(canvas, &object, tile)
+				// }
 			}
 		}
 
-		if contains(object.Code, patrollingAreaCodes) {
-			RenderPatrollingArea(canvas, &object, tile)
-		} else if contains(object.Code, routeAviationsFlightCodes) {
-			RenderRouteAviationFlight(canvas, &object, tile)
-		} else if object.Code == plannedAttackMainDirectionCode {
-			RenderPlannedAttackMainDirection(canvas, &object, tile)
-		} else if object.Code == attackMainDirectionCode {
-			RenderAttackMainDirection(canvas, &object, tile)
-		} else if object.Code == completedProvideActionCode {
-			RenderCompletedProvideAction(canvas, &object, tile)
-		} else if object.Code == pitCode {
-			RenderPit(canvas, &object, tile)
-		}
+		// if contains(object.Code, patrollingAreaCodes) {
+		// 	RenderPatrollingArea(canvas, &object, tile)
+		// } else if contains(object.Code, routeAviationsFlightCodes) {
+		// 	RenderRouteAviationFlight(canvas, &object, tile)
+		// } else if object.Code == plannedAttackMainDirectionCode {
+		// 	RenderPlannedAttackMainDirection(canvas, &object, tile)
+		// } else if object.Code == attackMainDirectionCode {
+		// 	RenderAttackMainDirection(canvas, &object, tile)
+		// } else if object.Code == completedProvideActionCode {
+		// 	RenderCompletedProvideAction(canvas, &object, tile)
+		// } else if object.Code == pitCode {
+		// 	RenderPit(canvas, &object, tile)
+		// }
 	}
 
 	canvas.End()
@@ -462,12 +462,9 @@ func renderPathRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, obj
 	alreadyDrawn := false
 	weight := 1
 
-	var style string
+	style := fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.ColorOuter, weight)
 
-	style = fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.ColorOuter, weight)
-
-	var i int
-	for i = 0; i < len(coords)-1; i++ {
+	for i := 0; i < len(coords)-1; i++ {
 		canvas.Line(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
 
 		lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
@@ -524,7 +521,7 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 
 		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
 		canvas.Gtransform(transformation)
-		if object.TypeID != 47 {
+		if object.Code != "1000000002" {
 			if fullLength <= 0 && !alreadyDrawn {
 				percentPosition := (-1.0) * fullLength / lineLength
 
@@ -554,7 +551,7 @@ func updateImageIfHashChanged(object *entities.MapObject) {
 	if hashTypes == nil {
 		hashTypes = make(map[int]string)
 	}
-	fmt.Println(hashTypes[object.TypeID])
+	// fmt.Println(hashTypes[object.TypeID])
 	value, isExists := hashTypes[object.TypeID]
 
 	if value != object.Hash || !isExists {

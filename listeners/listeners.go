@@ -46,17 +46,18 @@ func getTile(writer http.ResponseWriter, req *http.Request) {
 	tile := tiles.NewTile(x, y, z)
 	tile.BoundingBox.AddMargin()
 
-	dbMapsObjects, dbErr := db.GetGeometriesForTile(tile, situations)
-	if dbErr == nil {
-		for _, obj := range dbMapsObjects {
-			obj.StyleName = "home"
-			objects = append(objects, obj)
-		}
-	}
+	// dbMapsObjects, dbErr := db.GetGeometriesForTile(tile, situations)
+	// if dbErr == nil {
+	// 	for _, obj := range dbMapsObjects {
+	// 		obj.StyleName = "home"
+	// 		objects = append(objects, obj)
+	// 	}
+	// }
+
 	specialObjects, err := db.GetAllSpecialObject(tile, situations)
 	if err == nil {
 		for _, obj := range specialObjects {
-			// obj.StyleName = "home"
+			obj.StyleName = obj.Code
 			objects = append(objects, obj)
 		}
 	}
