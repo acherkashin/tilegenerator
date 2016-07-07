@@ -9,6 +9,7 @@ import (
 
 	"github.com/TerraFactory/svgo"
 	"github.com/TerraFactory/tilegenerator/database/entities"
+	"github.com/TerraFactory/tilegenerator/settings"
 	"github.com/TerraFactory/tilegenerator/settings/styling"
 	"github.com/TerraFactory/tilegenerator/utils"
 	"github.com/TerraFactory/wktparser/geometry"
@@ -580,45 +581,54 @@ func setDefaultColor(object *entities.MapObject) {
 }
 
 func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, x, y float64, zoom int) {
-	href := fmt.Sprintf("http://test.api.okenit.specprom46.ru/api/maps/object/%v/png", object.ID)
+	pathConfig := "./config.toml"
+	settings, err := settings.GetSettings(&pathConfig)
 
-	if result, err := utils.GetImgByURL(href); err == nil {
-		imgBase64Str := base64.StdEncoding.EncodeToString(result)
+	if err == nil {
+		href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, object.ID)
+		if result, err := utils.GetImgByURL(href); err == nil {
+			imgBase64Str := base64.StdEncoding.EncodeToString(result)
 
-		img2html := "data:image/png;base64," + imgBase64Str
+			img2html := "data:image/png;base64," + imgBase64Str
 
-		imageWidth := 5 + 5*zoom
-		imageHeight := 7 + 6*zoom
+			imageWidth := 5 + 5*zoom
+			imageHeight := 7 + 6*zoom
 
-		canvas.Image(int(x)-(int)(imageWidth/2.0),
-			int(y)-(int)(imageHeight/2.0),
-			int(imageWidth),
-			int(imageHeight),
-			img2html,
-			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", -90, x, y))
+			canvas.Image(int(x)-(int)(imageWidth/2.0),
+				int(y)-(int)(imageHeight/2.0),
+				int(imageWidth),
+				int(imageHeight),
+				img2html,
+				fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", -90, x, y))
+		}
 	}
 }
 
 func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1, y1, x2, y2, zoom int, percentPosition float64) {
-	href := fmt.Sprintf("http://test.api.okenit.specprom46.ru/api/maps/object/%v/png", object.ID)
-	if result, err := utils.GetImgByURL(href); err == nil {
-		imgBase64Str := base64.StdEncoding.EncodeToString(result)
+	pathConfig := "./config.toml"
+	settings, err := settings.GetSettings(&pathConfig)
 
-		img2html := "data:image/png;base64," + imgBase64Str
+	if err == nil {
+		href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, object.ID)
+		if result, err := utils.GetImgByURL(href); err == nil {
+			imgBase64Str := base64.StdEncoding.EncodeToString(result)
 
-		imageWidth := 5 + 5*zoom
-		imageHeight := 7 + 6*zoom
-		angel := getAngel(x1, y1, x2, y2)
+			img2html := "data:image/png;base64," + imgBase64Str
 
-		centerX := x1 + (int)((float64)(x2-x1)*percentPosition)
-		centerY := y1 + (int)((float64)(y2-y1)*percentPosition)
+			imageWidth := 5 + 5*zoom
+			imageHeight := 7 + 6*zoom
+			angel := getAngel(x1, y1, x2, y2)
 
-		canvas.Image(centerX-(int)(imageWidth/2.0),
-			centerY-(int)(imageHeight/2.0),
-			(int)(imageWidth),
-			(int)(imageHeight),
-			img2html,
-			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel-90, centerX, centerY))
+			centerX := x1 + (int)((float64)(x2-x1)*percentPosition)
+			centerY := y1 + (int)((float64)(y2-y1)*percentPosition)
+
+			canvas.Image(centerX-(int)(imageWidth/2.0),
+				centerY-(int)(imageHeight/2.0),
+				(int)(imageWidth),
+				(int)(imageHeight),
+				img2html,
+				fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel-90, centerX, centerY))
+		}
 	}
 }
 
