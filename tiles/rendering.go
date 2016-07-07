@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"path/filepath"
 	"strconv"
 
 	"github.com/TerraFactory/svgo"
@@ -450,7 +449,6 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	canvas.Group()
 
 	renderPathRouteAviationFlight(coords, canvas, object, tile)
-	updateImageIfHashChanged(object)
 	renderArrowRouteAviationFlight(coords, canvas, object, tile)
 
 	canvas.Gend()
@@ -524,13 +522,12 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 
 		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
 		canvas.Gtransform(transformation)
-		if object.TypeID != 47 {
+		if object.Code != "1000000002" {
 			if fullLength <= 0 && !alreadyDrawn {
 				percentPosition := (-1.0) * fullLength / lineLength
 
 				x := float64(area.leftLinePointX) + (float64(area.rightLinePointX-area.leftLinePointX) * percentPosition)
 				y := float64(area.leftLinePointY) + (float64(area.rightLinePointY-area.leftLinePointY) * percentPosition)
-				updateImageIfHashChanged(object)
 				renderImageOnPatrollingArea(canvas, object, area, x, y, tile.Z)
 				alreadyDrawn = true
 			}
@@ -548,29 +545,6 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 	}
 	canvas.Gend()
 	return nil
-}
-
-func updateImageIfHashChanged(object *entities.MapObject) {
-	if hashTypes == nil {
-		hashTypes = make(map[int]string)
-	}
-	fmt.Println(hashTypes[object.TypeID])
-	value, isExists := hashTypes[object.TypeID]
-
-	if value != object.Hash || !isExists {
-		hashTypes[object.TypeID] = object.Hash
-		pathConfig := "./config.toml"
-		settings, err := settings.GetSettings(&pathConfig)
-		if err == nil {
-			urlPicture := fmt.Sprintf("%v/api/maps/object_type/%v/png", settings.UrlAPI, object.TypeID)
-			image, err := utils.GetImgByURL(urlPicture)
-			if err == nil {
-				utils.SaveImageToFile(filepath.FromSlash(fmt.Sprintf("images/%v.png", object.TypeID)), image)
-			}
-		} else {
-			fmt.Println("Cannot read url api from config")
-		}
-	}
 }
 
 func renderRightPartPatrollingArea(canvas *svg.SVG, area *patrollingArea, object *entities.MapObject) {
@@ -607,46 +581,54 @@ func setDefaultColor(object *entities.MapObject) {
 }
 
 func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, x, y float64, zoom int) {
-	bytesImg, err := utils.GetImgFromFile(filepath.FromSlash(fmt.Sprintf("images/%v.png", object.TypeID)))
+	pathConfig := "./config.toml"
+	settings, err := settings.GetSettings(&pathConfig)
 
 	if err == nil {
-		imgBase64Str := base64.StdEncoding.EncodeToString(bytesImg)
+		href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, object.ID)
+		if result, err := utils.GetImgByURL(href); err == nil {
+			imgBase64Str := base64.StdEncoding.EncodeToString(result)
 
-		img2html := "data:image/png;base64," + imgBase64Str
+			img2html := "data:image/png;base64," + imgBase64Str
 
-		imageWidth := 5 + 5*zoom
-		imageHeight := 7 + 6*zoom
+			imageWidth := 5 + 5*zoom
+			imageHeight := 7 + 6*zoom
 
-		canvas.Image(int(x)-(int)(imageWidth/2.0),
-			int(y)-(int)(imageHeight/2.0),
-			int(imageWidth),
-			int(imageHeight),
-			img2html,
-			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", -90, x, y))
+			canvas.Image(int(x)-(int)(imageWidth/2.0),
+				int(y)-(int)(imageHeight/2.0),
+				int(imageWidth),
+				int(imageHeight),
+				img2html,
+				fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", -90, x, y))
+		}
 	}
 }
 
 func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1, y1, x2, y2, zoom int, percentPosition float64) {
-	bytesImg, err := utils.GetImgFromFile(filepath.FromSlash(fmt.Sprintf("images/%v.png", object.TypeID)))
+	pathConfig := "./config.toml"
+	settings, err := settings.GetSettings(&pathConfig)
 
 	if err == nil {
-		imgBase64Str := base64.StdEncoding.EncodeToString(bytesImg)
+		href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, object.ID)
+		if result, err := utils.GetImgByURL(href); err == nil {
+			imgBase64Str := base64.StdEncoding.EncodeToString(result)
 
-		img2html := "data:image/png;base64," + imgBase64Str
+			img2html := "data:image/png;base64," + imgBase64Str
 
-		imageWidth := 5 + 5*zoom
-		imageHeight := 7 + 6*zoom
-		angel := getAngel(x1, y1, x2, y2)
+			imageWidth := 5 + 5*zoom
+			imageHeight := 7 + 6*zoom
+			angel := getAngel(x1, y1, x2, y2)
 
-		centerX := x1 + (int)((float64)(x2-x1)*percentPosition)
-		centerY := y1 + (int)((float64)(y2-y1)*percentPosition)
+			centerX := x1 + (int)((float64)(x2-x1)*percentPosition)
+			centerY := y1 + (int)((float64)(y2-y1)*percentPosition)
 
-		canvas.Image(centerX-(int)(imageWidth/2.0),
-			centerY-(int)(imageHeight/2.0),
-			(int)(imageWidth),
-			(int)(imageHeight),
-			img2html,
-			fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel-90, centerX, centerY))
+			canvas.Image(centerX-(int)(imageWidth/2.0),
+				centerY-(int)(imageHeight/2.0),
+				(int)(imageWidth),
+				(int)(imageHeight),
+				img2html,
+				fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel-90, centerX, centerY))
+		}
 	}
 }
 
