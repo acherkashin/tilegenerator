@@ -43,7 +43,7 @@ var patrollingAreaCodes = []string{
 	"1000000002",
 }
 
-var attackMainDirectionCode = "13147260003502080100010001"
+var attackMainDirectionCode = "009995004501010106"
 var plannedAttackMainDirectionCode = "13147260003502080100010003"
 var completedProvideActionCode = "13147260003502080100010002"
 var pitCode = "21056441215588"

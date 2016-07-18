@@ -16,6 +16,7 @@ import (
 type ImagePrimitive struct {
 	Width  int64
 	Height int64
+	Scale  float64
 	Href   string
 	Rotate float64
 	Format string
@@ -25,7 +26,10 @@ type ImagePrimitive struct {
 func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 	point, _ := object.Geometry.AsPoint()
 	resultHref := strings.Replace(img.Href, "${ID}", strconv.Itoa(object.ID), 1)
+
 	img.Rotate = object.Azimut
+	img.Scale = object.Scale
+	img.Width, img.Height = img.Width*int64(img.Scale), img.Height*int64(img.Scale)
 
 	if result, err := utils.GetImgByURL(resultHref); err == nil {
 		img.bytes = result
