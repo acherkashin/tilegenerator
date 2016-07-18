@@ -23,7 +23,9 @@ func printStartingMsg(config *settings.Settings) {
 	fmt.Printf("\tGeometry table: %s\n", color.CyanString(config.DBGeometryTable))
 	fmt.Printf("\tGeometry column: %s\n", color.CyanString(config.DBGeometryColumn))
 	fmt.Printf("\tHTTP port: %s\n", color.CyanString(config.HTTPPort))
+	fmt.Printf("\tLogging directory: %s\n", color.CyanString(config.LogDirectory))
 	color.Green("\n Started!\n")
+	log.Println("Started!")
 }
 
 func getTile(writer http.ResponseWriter, req *http.Request) {

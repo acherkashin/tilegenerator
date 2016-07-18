@@ -18,6 +18,7 @@ type Settings struct {
 	HTTPPort           string
 	StylesDirectory    string
 	UrlAPI             string
+	LogDirectory       string
 }
 
 var instance *Settings
@@ -40,6 +41,7 @@ func readSettings(conf_path *string) (*Settings, error) {
 			HTTPPort:           config.Get("http.port").(string),
 			StylesDirectory:    config.Get("styles.directory").(string),
 			UrlAPI:             config.Get("api.url").(string),
+			LogDirectory:       config.Get("logging.directory").(string),
 		}
 	}
 	return &settings, nil
