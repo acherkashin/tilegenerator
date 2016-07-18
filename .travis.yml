@@ -7,7 +7,7 @@ env:
   - "PATH=/home/travis/gopath/bin:$PATH"
 
 before_script:
-  - go vet ./...
+  - go get ./...
 
 before_install:
   - go get -u github.com/golang/lint/golint
