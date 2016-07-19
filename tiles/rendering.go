@@ -58,8 +58,6 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 	}
 
 	canvas := svg.New(writer)
-	canvas.Gid("10")
-	canvas.Gend()
 	canvas.Start(TileSize, TileSize)
 	for _, object := range *objects {
 		object.Geometry.ConvertCoords(f)
@@ -246,17 +244,6 @@ func getArrowPoints(x1, y1, dx int) (sx []int, sy []int) {
 		y1-dx/2)
 
 	return sx, sy
-}
-
-func getPointsForPolarGrid(centerX, centerY int, radius float64) (xs, ys []int) {
-	for i := 0; i <= 24; i++ {
-		grad := float64(i) * 15 / 180 * math.Pi
-
-		xs = append(xs, centerX+int(radius*math.Cos(grad)))
-		ys = append(ys, centerY+int(radius*math.Sin(grad)))
-	}
-
-	return xs, ys
 }
 
 func getTempPointsForBeamPoints(k int, n float64) []*chartPoint {
@@ -710,35 +697,56 @@ func RenderAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, tile *Tile
 		return err
 	}
 
-	radius := 20 * float64(tile.Z+1) / 3
-
+	radius := getRadiusAzimuthalGrid(tile.Z)
+	strokeWidth := getStrokeWidthAzimuthalGrid(radius)
 	centerX, centerY := int(point.Coordinates.X), int(point.Coordinates.Y)
-	strokeWidth := float64(radius) / float64(100)
 	templateStyle := "stroke:%v; stroke-width:%v; fill: none;"
-	rotation := fmt.Sprintf("rotate(%v,%v,%v)", object.Azimut, centerX, centerY)
-	canvas.Gtransform(rotation)
+
+	canvas.Gtransform(fmt.Sprintf("rotate(%v,%v,%v)", object.Azimut, centerX, centerY))
+	renderGradationAzimuthalGrid(canvas, object, centerX, centerY, tile.Z)
+	canvas.Circle(centerX, centerY, int(radius*0.67), fmt.Sprintf(templateStyle, "yellow", strokeWidth))
+	canvas.Circle(centerX, centerY, int(radius), fmt.Sprintf(templateStyle, "green", strokeWidth))
+	canvas.Gend()
+
+	return nil
+}
+
+func getPointsForPolarGrid(centerX, centerY int, radius float64) (xs, ys []int) {
+	for i := 0; i <= 24; i++ {
+		grad := float64(i) * 15 / 180 * math.Pi
+
+		xs = append(xs, centerX+int(radius*math.Cos(grad)))
+		ys = append(ys, centerY+int(radius*math.Sin(grad)))
+	}
+
+	return xs, ys
+}
+
+func getRadiusAzimuthalGrid(zoom int) float64 {
+	return 20 * float64(zoom+1) / 3
+}
+
+func getStrokeWidthAzimuthalGrid(radius float64) float64 {
+	return float64(radius) / float64(100)
+}
+
+func renderGradationAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, centerX, centerY, zoom int) {
+	if object.ColorInner == "" {
+		object.ColorInner = "gray"
+	}
+	radius := getRadiusAzimuthalGrid(zoom)
+	strokeWidth := getStrokeWidthAzimuthalGrid(radius)
+	styleAzimuthalGrid := fmt.Sprintf("stroke:%v; stroke-width:%v; fill: none;", object.ColorInner, strokeWidth)
 
 	polarGridXs, polarGridYs := getPointsForPolarGrid(centerX, centerY, radius)
-
-	var styleAzimuthalGrid string
-	if object.ColorInner == "" {
-		styleAzimuthalGrid = fmt.Sprintf(templateStyle, "gray", strokeWidth)
-	} else {
-		styleAzimuthalGrid = fmt.Sprintf(templateStyle, object.ColorInner, strokeWidth)
-	}
 
 	for i := 0; i < len(polarGridXs); i++ {
 		canvas.Line(centerX, centerY, polarGridXs[i], polarGridYs[i], styleAzimuthalGrid)
 	}
 
 	indexZeroAzimut := 18
-	canvas.Line(centerX, centerY, polarGridXs[indexZeroAzimut], polarGridYs[indexZeroAzimut], fmt.Sprintf(templateStyle, "red", strokeWidth))
-
-	canvas.Circle(centerX, centerY, int(radius*0.67), fmt.Sprintf(templateStyle, "yellow", strokeWidth))
-	canvas.Circle(centerX, centerY, int(radius), fmt.Sprintf(templateStyle, "green", strokeWidth))
-	canvas.Gend()
-
-	return nil
+	canvas.Line(centerX, centerY, polarGridXs[indexZeroAzimut], polarGridYs[indexZeroAzimut],
+		fmt.Sprintf("stroke:%v; stroke-width:%v; fill: none;", "red", strokeWidth))
 }
 
 func contains(sample string, list []string) bool {
@@ -771,14 +779,14 @@ func renderCurve(canvas *svg.SVG, coords []geometry.Coord, style string) {
 				canvas.Line(x, y, beginArcX, beginArcY, style)
 			}
 
+			canvas.Qbez(beginArcX, beginArcY, xs[i+1], ys[i+1], endArcX, endArcY, style)
+
 			if i == count-3 {
 				canvas.Line(endArcX, endArcY, xs[i+2], ys[i+2], style)
 			} else {
 				x, y := equationLineByTwoPoints(xs[i+1], ys[i+1], xs[i+2], ys[i+2], 1-percentLength)
 				canvas.Line(endArcX, endArcY, x, y, style)
 			}
-
-			canvas.Qbez(beginArcX, beginArcY, xs[i+1], ys[i+1], endArcX, endArcY, style)
 		}
 	} else {
 		canvas.Line(xs[0], ys[0], xs[1], ys[1], style)
