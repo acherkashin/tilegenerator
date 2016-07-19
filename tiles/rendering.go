@@ -349,12 +349,12 @@ func drawHatching(canvas *svg.SVG, beginX, beginY, endX, endY int, style string)
 
 	currentPointPercent := percentSizeSegment
 	for i := 0; i < count-1; i += 2 {
-		x1, y1 := equationLineByTwoPoints(beginX, beginY, endX, endY, currentPointPercent)
+		x1, y1 := getPointOnLine(beginX, beginY, endX, endY, currentPointPercent)
 		currentPointPercent += percentSizeSegment
-		x2, y2 := equationLineByTwoPoints(beginX, beginY, endX, endY, currentPointPercent)
+		x2, y2 := getPointOnLine(beginX, beginY, endX, endY, currentPointPercent)
 		currentPointPercent += percentSizeSegment
 
-		resultX, resultY := RotatePoint(x1, y1, x2, y2, -90)
+		resultX, resultY := rotatePoint(x1, y1, x2, y2, -90)
 
 		canvas.Line(x1, y1, resultX, resultY, style)
 	}
@@ -435,7 +435,7 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	coords := line.Coordinates
 	setDefaultColor(object)
 
-	canvas.Group()
+	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
 
 	renderPathRouteAviationFlight(coords, canvas, object, tile)
 	renderArrowRouteAviationFlight(coords, canvas, object, tile)
@@ -445,42 +445,50 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 }
 
 func renderPathRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, object *entities.MapObject, tile *Tile) {
-	fullLength := getLengthPolyline(coords, tile) / 2
-	alreadyDrawn := false
-	weight := 1
+	style := fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.ColorOuter, 1)
+	renderPolyline(canvas, coords, style)
 
-	var style string
+	if object.Code != "1000000004" {
+		x, y, angel := getCenterPolylineAndAngel(coords)
+		renderImageOnRouteAviation(canvas, object, angel, x, y, tile.Z)
+	}
+}
 
-	style = fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.ColorOuter, weight)
+func renderPolyline(canvas *svg.SVG, coords []geometry.Coord, style string) {
+	xs, ys := coordToXsYs(coords)
 
+	canvas.Polyline(xs, ys, style)
+}
+
+//angel is angel between line and axis Ox
+func getCenterPolylineAndAngel(coords []geometry.Coord) (x, y int, angel float64) {
+	var lineLength float64
 	var i int
-	for i = 0; i < len(coords)-1; i++ {
-		canvas.Line(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
+	halfLength := getLengthPolyline(coords) / 2
 
-		lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
-		fullLength -= lineLength
-
-		if object.Code != "1000000004" {
-			if fullLength <= 0 && !alreadyDrawn {
-				percentPosition := (-1.0) * fullLength / lineLength
-
-				renderImageOnRouteAviation(canvas, object, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z, percentPosition)
-				alreadyDrawn = true
-			}
-		}
+	for i = 0; i < len(coords) && halfLength > 0; i++ {
+		lineLength = distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
+		halfLength -= lineLength
 	}
 
+	percentPosition := 1 - (-1.0)*halfLength/lineLength
+
+	centerX, centerY := getPointOnLine(int(coords[i-1].X), int(coords[i-1].Y), int(coords[i].X), int(coords[i].Y), percentPosition)
+
+	angel = getAngel(int(coords[i-1].X), int(coords[i-1].Y), int(coords[i].X), int(coords[i].Y))
+
+	return centerX, centerY, angel
 }
 
 func renderArrowRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, object *entities.MapObject, tile *Tile) {
 	lengthArrow := 5.0
 	weight := 1
 	i := len(coords) - 2
-	lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
+	lastLineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
 
 	styleArrow := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: %v;", object.ColorInner, weight, object.ColorInner)
 
-	if lineLength > lengthArrow {
+	if lastLineLength > lengthArrow {
 		xs, ys := getArrowRouteAviationFlight(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), tile.Z)
 		canvas.Polyline(xs, ys, styleArrow)
 	}
@@ -500,20 +508,20 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 
 	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
 
-	fullLength := getLengthPolyline(coords, tile) / 2
+	halfLength := getLengthPolyline(coords) / 2
 	alreadyDrawn := false
 
 	for i := 0; i < len(coords)-1; i++ {
 
 		area := newPatrollingArea(tile, coords, i)
 		lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
-		fullLength -= lineLength
+		halfLength -= lineLength
 
 		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
 		canvas.Gtransform(transformation)
 		if object.Code != "1000000002" {
-			if fullLength <= 0 && !alreadyDrawn {
-				percentPosition := (-1.0) * fullLength / lineLength
+			if halfLength <= 0 && !alreadyDrawn {
+				percentPosition := (-1.0) * halfLength / lineLength
 
 				x := float64(area.leftLinePointX) + (float64(area.rightLinePointX-area.leftLinePointX) * percentPosition)
 				y := float64(area.leftLinePointY) + (float64(area.rightLinePointY-area.leftLinePointY) * percentPosition)
@@ -593,12 +601,13 @@ func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, ar
 	}
 }
 
-func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1, y1, x2, y2, zoom int, percentPosition float64) {
+func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, angel float64, x, y, zoom int) {
 	pathConfig := "./config.toml"
 	settings, err := settings.GetSettings(&pathConfig)
 
 	if err == nil {
-		href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, object.ID)
+		// href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, object.ID)
+		href := fmt.Sprintf("%v/api/maps/object/1404842/png", settings.UrlAPI)
 		if result, err := utils.GetImgByURL(href); err == nil {
 			imgBase64Str := base64.StdEncoding.EncodeToString(result)
 
@@ -606,22 +615,18 @@ func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, x1,
 
 			imageWidth := 5 + 5*zoom
 			imageHeight := 7 + 6*zoom
-			angel := getAngel(x1, y1, x2, y2)
 
-			centerX := x1 + (int)((float64)(x2-x1)*percentPosition)
-			centerY := y1 + (int)((float64)(y2-y1)*percentPosition)
-
-			canvas.Image(centerX-(int)(imageWidth/2.0),
-				centerY-(int)(imageHeight/2.0),
+			canvas.Image(x-(int)(imageWidth/2.0),
+				y-(int)(imageHeight/2.0),
 				(int)(imageWidth),
 				(int)(imageHeight),
 				img2html,
-				fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel-90, centerX, centerY))
+				fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel-90, x, y))
 		}
 	}
 }
 
-func getLengthPolyline(coords []geometry.Coord, tile *Tile) float64 {
+func getLengthPolyline(coords []geometry.Coord) float64 {
 	sum := 0.0
 
 	for i := 0; i < len(coords)-1; i++ {
@@ -636,25 +641,26 @@ func getArrowRouteAviationFlight(BeginX, BeginY, EndX, EndY, zoom int) ([]int, [
 	distance := distanceBeetweenPoints(BeginX, BeginY, EndX, EndY)
 	percentSize := 1 - 5.0/distance
 	angel = 120
-	centerX, centerY := equationLineByTwoPoints(BeginX, BeginY, EndX, EndY, percentSize)
+	centerX, centerY := getPointOnLine(BeginX, BeginY, EndX, EndY, percentSize)
 	rotatedPointX, rotatedPointY := EndX, EndY
 
-	p1X, p1Y := RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, angel)
-	p2X, p2Y := RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, -angel)
+	p1X, p1Y := rotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, angel)
+	p2X, p2Y := rotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, -angel)
 
 	xs := []int{p1X, rotatedPointX, p2X}
 	ys := []int{p1Y, rotatedPointY, p2Y}
 	return xs, ys
 }
 
-func equationLineByTwoPoints(BeginX, BeginY, EndX, EndY int, percentSize float64) (pointX, pointY int) {
+//equation of the line is defined by two points
+func getPointOnLine(BeginX, BeginY, EndX, EndY int, percentSize float64) (pointX, pointY int) {
 	pointX = BeginX + (int)((float64)(EndX-BeginX)*percentSize)
 	pointY = BeginY + (int)((float64)(EndY-BeginY)*percentSize)
 
 	return pointX, pointY
 }
 
-func RotatePoint(centerX, centerY, pointX, pointY, angel int) (x, y int) {
+func rotatePoint(centerX, centerY, pointX, pointY, angel int) (x, y int) {
 	x = centerX + (int)((float64)(pointX-centerX)*math.Cos((float64)(angel)*math.Pi/180)) - (int)((float64)(pointY-centerY)*math.Sin((float64)(angel)/180*math.Pi))
 	y = centerY + (int)((float64)(pointX-centerX)*math.Sin((float64)(angel)*math.Pi/180)) + (int)((float64)(pointY-centerY)*math.Cos((float64)(angel)/180*math.Pi))
 	return x, y
@@ -769,13 +775,13 @@ func renderCurve(canvas *svg.SVG, coords []geometry.Coord, style string) {
 	percentLength := 0.5
 	if count >= 3 {
 		for i := 0; i <= count-3; i++ {
-			endArcX, endArcY := equationLineByTwoPoints(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
-			beginArcX, beginArcY := equationLineByTwoPoints(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
+			endArcX, endArcY := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
+			beginArcX, beginArcY := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
 
 			if i == 0 {
 				canvas.Line(xs[i], ys[i], beginArcX, beginArcY, style)
 			} else {
-				x, y := equationLineByTwoPoints(xs[i], ys[i], xs[i+1], ys[i+1], percentLength)
+				x, y := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], percentLength)
 				canvas.Line(x, y, beginArcX, beginArcY, style)
 			}
 
@@ -784,7 +790,7 @@ func renderCurve(canvas *svg.SVG, coords []geometry.Coord, style string) {
 			if i == count-3 {
 				canvas.Line(endArcX, endArcY, xs[i+2], ys[i+2], style)
 			} else {
-				x, y := equationLineByTwoPoints(xs[i+1], ys[i+1], xs[i+2], ys[i+2], 1-percentLength)
+				x, y := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], 1-percentLength)
 				canvas.Line(endArcX, endArcY, x, y, style)
 			}
 		}
