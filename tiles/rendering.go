@@ -58,6 +58,8 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 	}
 
 	canvas := svg.New(writer)
+	canvas.Gid("10")
+	canvas.Gend()
 	canvas.Start(TileSize, TileSize)
 	for _, object := range *objects {
 		object.Geometry.ConvertCoords(f)
@@ -346,13 +348,13 @@ func RenderPit(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
 
 	for i := 0; i < len(coords)-1; i++ {
 		canvas.Line(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
-		drawSegmentation(canvas, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
+		drawHatching(canvas, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
 	}
 
 	return nil
 }
 
-func drawSegmentation(canvas *svg.SVG, beginX, beginY, endX, endY int, style string) {
+func drawHatching(canvas *svg.SVG, beginX, beginY, endX, endY int, style string) {
 	length := 8
 	distance := distanceBeetweenPoints(beginX, beginY, endX, endY)
 	percentSizeSegment := float64(length) / distance
@@ -746,4 +748,50 @@ func contains(sample string, list []string) bool {
 		}
 	}
 	return false
+}
+
+func renderCurve(canvas *svg.SVG, coords []geometry.Coord, style string) {
+	xs, ys := coordToXsYs(coords)
+	count := len(xs)
+
+	if count <= 1 {
+		panic("object must have more than one point")
+	}
+
+	percentLength := 0.5
+	if count >= 3 {
+		for i := 0; i <= count-3; i++ {
+			endArcX, endArcY := equationLineByTwoPoints(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
+			beginArcX, beginArcY := equationLineByTwoPoints(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
+
+			if i == 0 {
+				canvas.Line(xs[i], ys[i], beginArcX, beginArcY, style)
+			} else {
+				x, y := equationLineByTwoPoints(xs[i], ys[i], xs[i+1], ys[i+1], percentLength)
+				canvas.Line(x, y, beginArcX, beginArcY, style)
+			}
+
+			if i == count-3 {
+				canvas.Line(endArcX, endArcY, xs[i+2], ys[i+2], style)
+			} else {
+				x, y := equationLineByTwoPoints(xs[i+1], ys[i+1], xs[i+2], ys[i+2], 1-percentLength)
+				canvas.Line(endArcX, endArcY, x, y, style)
+			}
+
+			canvas.Qbez(beginArcX, beginArcY, xs[i+1], ys[i+1], endArcX, endArcY, style)
+		}
+	} else {
+		canvas.Line(xs[0], ys[0], xs[1], ys[1], style)
+	}
+}
+
+func coordToXsYs(coords []geometry.Coord) ([]int, []int) {
+	var xs, ys []int
+
+	for _, coord := range coords {
+		xs = append(xs, int(coord.X))
+		ys = append(ys, int(coord.Y))
+	}
+
+	return xs, ys
 }
