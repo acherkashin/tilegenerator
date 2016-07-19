@@ -673,19 +673,19 @@ func RenderBeamDiagram(canvas *svg.SVG, object *entities.MapObject, tile *Tile) 
 		return err
 	}
 
-	radius := 20 * float64(tile.Z+1) / 3
+	radius := getRadiusAzimuthalGrid(tile.Z)
+	strokeWidth := getStrokeWidthAzimuthalGrid(radius)
 	centerX, centerY := int(point.Coordinates.X), int(point.Coordinates.Y)
 
-	rotation := fmt.Sprintf("rotate(%v,%v,%v)", object.Azimut, centerX, centerY)
-	canvas.Gtransform(rotation)
-	strokeWidth := float64(radius) / float64(100)
+	canvas.Gtransform(fmt.Sprintf("rotate(%v,%v,%v)", object.Azimut, centerX, centerY))
 	xs, ys := getBeamDiagramPoints(centerX, centerY, int(object.BeamWidth), object.Sidelobes, radius)
-	templateStyle := "stroke:%v; stroke-width:%v; fill: none;"
-	if object.ColorOuter != "" {
-		canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, object.ColorOuter, strokeWidth))
-	} else {
-		canvas.Polygon(xs, ys, fmt.Sprintf(templateStyle, "red", strokeWidth))
+
+	if object.ColorOuter == "" {
+		object.ColorOuter = "red"
 	}
+
+	canvas.Polygon(xs, ys, fmt.Sprintf("stroke:%v; stroke-width:%v; fill: none;", object.ColorOuter, strokeWidth))
+
 	canvas.Gend()
 	return nil
 }
@@ -711,25 +711,6 @@ func RenderAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, tile *Tile
 	return nil
 }
 
-func getPointsForPolarGrid(centerX, centerY int, radius float64) (xs, ys []int) {
-	for i := 0; i <= 24; i++ {
-		grad := float64(i) * 15 / 180 * math.Pi
-
-		xs = append(xs, centerX+int(radius*math.Cos(grad)))
-		ys = append(ys, centerY+int(radius*math.Sin(grad)))
-	}
-
-	return xs, ys
-}
-
-func getRadiusAzimuthalGrid(zoom int) float64 {
-	return 20 * float64(zoom+1) / 3
-}
-
-func getStrokeWidthAzimuthalGrid(radius float64) float64 {
-	return float64(radius) / float64(100)
-}
-
 func renderGradationAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, centerX, centerY, zoom int) {
 	if object.ColorInner == "" {
 		object.ColorInner = "gray"
@@ -747,6 +728,25 @@ func renderGradationAzimuthalGrid(canvas *svg.SVG, object *entities.MapObject, c
 	indexZeroAzimut := 18
 	canvas.Line(centerX, centerY, polarGridXs[indexZeroAzimut], polarGridYs[indexZeroAzimut],
 		fmt.Sprintf("stroke:%v; stroke-width:%v; fill: none;", "red", strokeWidth))
+}
+
+func getPointsForPolarGrid(centerX, centerY int, radius float64) (xs, ys []int) {
+	for i := 0; i <= 24; i++ {
+		grad := float64(i) * 15 / 180 * math.Pi
+
+		xs = append(xs, centerX+int(radius*math.Cos(grad)))
+		ys = append(ys, centerY+int(radius*math.Sin(grad)))
+	}
+
+	return xs, ys
+}
+
+func getRadiusAzimuthalGrid(zoom int) float64 {
+	return 20 * float64(zoom+1) / 3
+}
+
+func getStrokeWidthAzimuthalGrid(radius float64) float64 {
+	return float64(radius) / float64(100)
 }
 
 func contains(sample string, list []string) bool {
