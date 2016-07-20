@@ -62,38 +62,33 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 	for _, object := range *objects {
 		object.Geometry.ConvertCoords(f)
 
-		// for _, style := range *styles {
-		// 	if style.ShouldRender(&object) {
-		// 		style.Render(&object, canvas)
-		// 		continue
+		for _, style := range *styles {
+			if style.ShouldRender(&object) {
+				style.Render(&object, canvas)
 
-		// 		if object.IsAntenna && object.NeedShowDirectionalDiagram {
-		// 			RenderBeamDiagram(canvas, &object, tile)
-		// 		}
+				if object.IsAntenna && object.NeedShowDirectionalDiagram {
+					RenderBeamDiagram(canvas, &object, tile)
+				}
 
-		// 		if object.NeedShowAzimuthalGrid {
-		// 			RenderAzimuthalGrid(canvas, &object, tile)
-		// 		}
-		// 	}
-		// }
-
-		// if contains(object.Code, patrollingAreaCodes) {
-		// 	RenderPatrollingArea(canvas, &object, tile)
-		// } else
-		if contains(object.Code, routeAviationsFlightCodes) {
-			RenderPit(canvas, &object, tile)
-
-			// RenderRouteAviationFlight(canvas, &object, tile)
+				if object.NeedShowAzimuthalGrid {
+					RenderAzimuthalGrid(canvas, &object, tile)
+				}
+			}
 		}
-		// else if object.Code == plannedAttackMainDirectionCode {
-		// 	RenderPlannedAttackMainDirection(canvas, &object, tile)
-		// } else if object.Code == attackMainDirectionCode {
-		// 	RenderAttackMainDirection(canvas, &object, tile)
-		// } else if object.Code == completedProvideActionCode {
-		// 	RenderCompletedProvideAction(canvas, &object, tile)
-		// } else if object.Code == pitCode {
-		// 	RenderPit(canvas, &object, tile)
-		// }
+
+		if contains(object.Code, patrollingAreaCodes) {
+			RenderPatrollingArea(canvas, &object, tile)
+		} else if contains(object.Code, routeAviationsFlightCodes) {
+			RenderRouteAviationFlight(canvas, &object, tile)
+		} else if object.Code == plannedAttackMainDirectionCode {
+			RenderPlannedAttackMainDirection(canvas, &object, tile)
+		} else if object.Code == attackMainDirectionCode {
+			RenderAttackMainDirection(canvas, &object, tile)
+		} else if object.Code == completedProvideActionCode {
+			RenderCompletedProvideAction(canvas, &object, tile)
+		} else if object.Code == pitCode {
+			RenderPit(canvas, &object, tile)
+		}
 	}
 
 	canvas.End()
