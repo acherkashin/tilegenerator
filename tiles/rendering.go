@@ -286,7 +286,7 @@ func сalculateValueFormula(k int, q, n float64) float64 {
 func getRightArrowPoints(x1, y1, distance int) (xs []int, ys []int) {
 	radiusX := distance / 4
 	radiusY := radiusX / 2
-	arrowSize := int(distance / 15)
+	arrowSize := 10
 
 	pointForArrowX := x1
 	pointForArrowY := y1 + int(2*radiusY)
@@ -298,7 +298,7 @@ func getRightArrowPoints(x1, y1, distance int) (xs []int, ys []int) {
 func getLeftArrowPoints(x1, y1, distance int) (xs []int, ys []int) {
 	radiusX := distance / 4
 	radiusY := radiusX / 2
-	arrowSize := int(distance / 15)
+	arrowSize := 10
 
 	pointForArrowX := x1
 	pointForArrowY := y1 - int(2*radiusY)
@@ -554,7 +554,9 @@ func renderRightPartPatrollingArea(canvas *svg.SVG, area *patrollingArea, object
 		area.rightLinePointX,
 		area.rightLinePointY+int(2*area.radiusY),
 		fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
-	canvas.Polyline(area.rightArrowXs, area.rightArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", object.ColorInner, object.ColorInner))
+	if area.radiusX > 10 {
+		canvas.Polyline(area.rightArrowXs, area.rightArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", object.ColorInner, object.ColorInner))
+	}
 }
 
 func renderLeftPartPatrollingArea(canvas *svg.SVG, area *patrollingArea, object *entities.MapObject) {
@@ -566,7 +568,9 @@ func renderLeftPartPatrollingArea(canvas *svg.SVG, area *patrollingArea, object 
 		area.leftLinePointX,
 		area.leftLinePointY-int(2*area.radiusY),
 		fmt.Sprintf("stroke: %v; fill: none", object.ColorOuter))
-	canvas.Polyline(area.leftArrowXs, area.leftArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", object.ColorInner, object.ColorInner))
+	if area.radiusX > 10 {
+		canvas.Polyline(area.leftArrowXs, area.leftArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", object.ColorInner, object.ColorInner))
+	}
 }
 
 func setDefaultColor(object *entities.MapObject) {
