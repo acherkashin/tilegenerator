@@ -98,55 +98,11 @@ type chartPoint struct {
 	x, y, z, value float64
 }
 
-type patrollingArea struct {
-	x1, y1, x2, y2                  int
-	radiusX, radiusY                int
-	leftLinePointX, rightLinePointX int
-	leftLinePointY, rightLinePointY int
-	centerX, centerY                int
-	rotateAngel                     float64
-	distance                        float64
-	leftArrowXs, leftArrowYs        []int
-	rightArrowXs, rightArrowYs      []int
-}
-
 type bigArrow struct {
 	pointXs, pointYs, arrowXs, arrowYs []int
 	centerX, centerY                   int
 
 	rotateAngel float64
-}
-
-func newPatrollingArea(tile *Tile, coords []geometry.Coord, firstIndex int) *patrollingArea {
-	x1, y1 := int(coords[firstIndex].X), int(coords[firstIndex].Y)
-	x2, y2 := int(coords[firstIndex+1].X), int(coords[firstIndex+1].Y)
-
-	radiusX := int(distanceBeetweenPoints(x1, y1, x2, y2) / 4)
-	radiusY := int(radiusX / 2)
-	centerX, centerY := getLineCenter(x1, y1, x2, y2)
-	distance := distanceBeetweenPoints(x1, y1, x2, y2)
-	rightLinePointX, rightLinePointY := centerX+int(distance/2), centerY
-	leftLinePointX, leftLinePointY := centerX-int(distance/2), centerY
-	leftArrowXs, leftArrowYs := getLeftArrowPoints(leftLinePointX, leftLinePointY, int(distance))
-	rightArrowXs, rightArrowYs := getRightArrowPoints(rightLinePointX, rightLinePointY, int(distance))
-
-	return &patrollingArea{
-		x1: x1, y1: y1, x2: x2, y2: y2,
-		radiusX:         radiusX,
-		radiusY:         radiusY,
-		centerX:         centerX,
-		centerY:         centerY,
-		distance:        distance,
-		rightLinePointX: rightLinePointX,
-		rightLinePointY: rightLinePointY,
-		leftLinePointX:  leftLinePointX,
-		leftLinePointY:  leftLinePointY,
-		leftArrowXs:     leftArrowXs,
-		leftArrowYs:     leftArrowYs,
-		rightArrowXs:    rightArrowXs,
-		rightArrowYs:    rightArrowYs,
-		rotateAngel:     getAngel(x1, y1, x2, y2),
-	}
 }
 
 func newBigArrow(tile *Tile, coords []geometry.Coord) *bigArrow {
@@ -443,9 +399,9 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 
 	if object.Code != "1000000004" {
 		xs, ys := coordToXsYs(coords)
-		curveXs, curveYs := polylineToCurvePoints(xs, ys)
-		x, y, angel := getCenterPolylineAndAngel(curveXs, curveYs)
-		renderImageOnRouteAviation(canvas, object, angel, x, y, tile.Z)
+		xs, ys = polylineToCurvePoints(xs, ys)
+		x, y, angel := getCenterPolylineAndAngel(xs, ys)
+		renderImageOnLine(canvas, object, angel, x, y, tile.Z)
 	}
 
 	renderArrowRouteAviationFlight(coords, canvas, object, tile)
@@ -503,74 +459,79 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 		return err
 	}
 	coords := line.Coordinates
-
+	count := len(coords)
 	setDefaultColor(object)
 
 	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
 
 	xs, ys := coordToXsYs(coords)
-	halfLength := getLengthPolyline(xs, ys) / 2
-	alreadyDrawn := false
+	// renderPolyline(canvas, coords, fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
+	renderCurve(canvas, coords, fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
 
-	for i := 0; i < len(coords)-1; i++ {
-
-		area := newPatrollingArea(tile, coords, i)
-		lineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
-		halfLength -= lineLength
-
-		transformation := fmt.Sprintf("rotate(%v,%v,%v)", area.rotateAngel, area.centerX, area.centerY)
-		canvas.Gtransform(transformation)
-		if object.Code != "1000000002" {
-			if halfLength <= 0 && !alreadyDrawn {
-				percentPosition := (-1.0) * halfLength / lineLength
-
-				x := float64(area.leftLinePointX) + (float64(area.rightLinePointX-area.leftLinePointX) * percentPosition)
-				y := float64(area.leftLinePointY) + (float64(area.rightLinePointY-area.leftLinePointY) * percentPosition)
-				renderImageOnPatrollingArea(canvas, object, area, x, y, tile.Z)
-				alreadyDrawn = true
-			}
-		}
-
-		canvas.Line(area.rightLinePointX, area.rightLinePointY, area.leftLinePointX, area.leftLinePointY, fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
-		if i == 0 {
-			renderRightPartPatrollingArea(canvas, area, object)
-		}
-
-		if i == len(coords)-2 {
-			renderLeftPartPatrollingArea(canvas, area, object)
-		}
-		canvas.Gend()
+	if object.Code != "1000000002" {
+		// xs, ys = polylineToCurvePoints(xs, ys)
+		x, y, angel := getCenterPolylineAndAngel(xs, ys)
+		renderImageOnLine(canvas, object, angel, x, y, tile.Z)
 	}
+
+	renderRightPartPatrollingArea(canvas, xs[0], ys[0], xs[1], ys[1], object.ColorInner, object.ColorOuter)
+	renderLeftPartPatrollingArea(canvas, xs[count-2], ys[count-2], xs[count-1], ys[count-1], object.ColorInner, object.ColorOuter)
+
 	canvas.Gend()
+
 	return nil
 }
 
-func renderRightPartPatrollingArea(canvas *svg.SVG, area *patrollingArea, object *entities.MapObject) {
-	canvas.Arc(area.rightLinePointX,
-		area.rightLinePointY,
-		area.radiusX,
-		area.radiusY,
+//At first, we display arc and arrow horizontally and then rotate to needed angle
+func renderRightPartPatrollingArea(canvas *svg.SVG, x1, y1, x2, y2 int, colorInner, colorOuter string) {
+	radiusX := int(distanceBeetweenPoints(x1, y1, x2, y2) / 4)
+	radiusY := int(radiusX / 2)
+	centerX, centerY := getLineCenter(x1, y1, x2, y2)
+	distance := distanceBeetweenPoints(x1, y1, x2, y2)
+	rightLinePointX, rightLinePointY := centerX+int(distance/2), centerY
+	rightArrowXs, rightArrowYs := getRightArrowPoints(rightLinePointX, rightLinePointY, int(distance))
+
+	canvas.Gtransform(fmt.Sprintf("rotate(%v,%v,%v)", getAngel(x1, y1, x2, y2), centerX, centerY))
+	canvas.Arc(rightLinePointX,
+		rightLinePointY,
+		radiusX,
+		radiusY,
 		0, false, true,
-		area.rightLinePointX,
-		area.rightLinePointY+int(2*area.radiusY),
-		fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
-	if area.radiusX > 10 {
-		canvas.Polyline(area.rightArrowXs, area.rightArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", object.ColorInner, object.ColorInner))
+		rightLinePointX,
+		rightLinePointY+int(2*radiusY),
+		fmt.Sprintf("stroke: %v; fill: none;", colorOuter))
+
+	arrowSize := 10
+	if radiusX > arrowSize {
+		canvas.Polyline(rightArrowXs, rightArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", colorInner, colorInner))
 	}
+	canvas.Gend()
 }
 
-func renderLeftPartPatrollingArea(canvas *svg.SVG, area *patrollingArea, object *entities.MapObject) {
-	canvas.Arc(area.leftLinePointX,
-		area.leftLinePointY,
-		area.radiusX,
-		area.radiusY,
+//At first, we display arc and arrow horizontally and then rotate to needed angle
+func renderLeftPartPatrollingArea(canvas *svg.SVG, x1, y1, x2, y2 int, colorInner, colorOuter string) {
+	radiusX := int(distanceBeetweenPoints(x1, y1, x2, y2) / 4)
+	radiusY := int(radiusX / 2)
+	centerX, centerY := getLineCenter(x1, y1, x2, y2)
+	distance := distanceBeetweenPoints(x1, y1, x2, y2)
+	leftLinePointX, leftLinePointY := centerX-int(distance/2), centerY
+	leftArrowXs, leftArrowYs := getLeftArrowPoints(leftLinePointX, leftLinePointY, int(distance))
+
+	canvas.Gtransform(fmt.Sprintf("rotate(%v,%v,%v)", getAngel(x1, y1, x2, y2), centerX, centerY))
+	canvas.Arc(leftLinePointX,
+		leftLinePointY,
+		radiusX,
+		radiusY,
 		0, false, true,
-		area.leftLinePointX,
-		area.leftLinePointY-int(2*area.radiusY),
-		fmt.Sprintf("stroke: %v; fill: none", object.ColorOuter))
-	if area.radiusX > 10 {
-		canvas.Polyline(area.leftArrowXs, area.leftArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", object.ColorInner, object.ColorInner))
+		leftLinePointX,
+		leftLinePointY-int(2*radiusY),
+		fmt.Sprintf("stroke: %v; fill: none", colorOuter))
+
+	arrowSize := 10
+	if radiusX > arrowSize {
+		canvas.Polyline(leftArrowXs, leftArrowYs, fmt.Sprintf("stroke: %v; fill: %v;", colorInner, colorInner))
 	}
+	canvas.Gend()
 }
 
 func setDefaultColor(object *entities.MapObject) {
@@ -582,31 +543,7 @@ func setDefaultColor(object *entities.MapObject) {
 	}
 }
 
-func renderImageOnPatrollingArea(canvas *svg.SVG, object *entities.MapObject, area *patrollingArea, x, y float64, zoom int) {
-	pathConfig := "./config.toml"
-	settings, err := settings.GetSettings(&pathConfig)
-
-	if err == nil {
-		href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, object.ID)
-		if result, err := utils.GetImgByURL(href); err == nil {
-			imgBase64Str := base64.StdEncoding.EncodeToString(result)
-
-			img2html := "data:image/png;base64," + imgBase64Str
-
-			imageWidth := 5 + 5*zoom
-			imageHeight := 7 + 6*zoom
-
-			canvas.Image(int(x)-(int)(imageWidth/2.0),
-				int(y)-(int)(imageHeight/2.0),
-				int(imageWidth),
-				int(imageHeight),
-				img2html,
-				fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", -90, x, y))
-		}
-	}
-}
-
-func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, angel float64, x, y, zoom int) {
+func renderImageOnLine(canvas *svg.SVG, object *entities.MapObject, angel float64, x, y, zoom int) {
 	pathConfig := "./config.toml"
 	settings, err := settings.GetSettings(&pathConfig)
 
