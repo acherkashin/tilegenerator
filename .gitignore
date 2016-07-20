@@ -22,6 +22,7 @@ _testmain.go
 
 *.bat
 *.exe
+*.exe~
 *.test
 *.prof
 app

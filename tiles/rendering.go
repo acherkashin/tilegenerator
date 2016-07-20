@@ -62,33 +62,38 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 	for _, object := range *objects {
 		object.Geometry.ConvertCoords(f)
 
-		for _, style := range *styles {
-			if style.ShouldRender(&object) {
-				style.Render(&object, canvas)
+		// for _, style := range *styles {
+		// 	if style.ShouldRender(&object) {
+		// 		style.Render(&object, canvas)
+		// 		continue
 
-				if object.IsAntenna && object.NeedShowDirectionalDiagram {
-					RenderBeamDiagram(canvas, &object, tile)
-				}
+		// 		if object.IsAntenna && object.NeedShowDirectionalDiagram {
+		// 			RenderBeamDiagram(canvas, &object, tile)
+		// 		}
 
-				if object.NeedShowAzimuthalGrid {
-					RenderAzimuthalGrid(canvas, &object, tile)
-				}
-			}
-		}
+		// 		if object.NeedShowAzimuthalGrid {
+		// 			RenderAzimuthalGrid(canvas, &object, tile)
+		// 		}
+		// 	}
+		// }
 
-		if contains(object.Code, patrollingAreaCodes) {
-			RenderPatrollingArea(canvas, &object, tile)
-		} else if contains(object.Code, routeAviationsFlightCodes) {
-			RenderRouteAviationFlight(canvas, &object, tile)
-		} else if object.Code == plannedAttackMainDirectionCode {
-			RenderPlannedAttackMainDirection(canvas, &object, tile)
-		} else if object.Code == attackMainDirectionCode {
-			RenderAttackMainDirection(canvas, &object, tile)
-		} else if object.Code == completedProvideActionCode {
-			RenderCompletedProvideAction(canvas, &object, tile)
-		} else if object.Code == pitCode {
+		// if contains(object.Code, patrollingAreaCodes) {
+		// 	RenderPatrollingArea(canvas, &object, tile)
+		// } else
+		if contains(object.Code, routeAviationsFlightCodes) {
 			RenderPit(canvas, &object, tile)
+
+			// RenderRouteAviationFlight(canvas, &object, tile)
 		}
+		// else if object.Code == plannedAttackMainDirectionCode {
+		// 	RenderPlannedAttackMainDirection(canvas, &object, tile)
+		// } else if object.Code == attackMainDirectionCode {
+		// 	RenderAttackMainDirection(canvas, &object, tile)
+		// } else if object.Code == completedProvideActionCode {
+		// 	RenderCompletedProvideAction(canvas, &object, tile)
+		// } else if object.Code == pitCode {
+		// 	RenderPit(canvas, &object, tile)
+		// }
 	}
 
 	canvas.End()
@@ -282,33 +287,78 @@ func RenderPit(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
 	}
 
 	coords := line.Coordinates
-	weight := 1
-	if object.ColorOuter == "" {
-		object.ColorOuter = "black"
-	}
+	setDefaultColor(object)
+	style := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.ColorOuter, 2)
+	xs, ys := coordToXsYs(coords)
+	percentLength := 0.5
+	renderCurve(canvas, coords, style)
 
-	style := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.ColorOuter, weight)
+	if len(xs) >= 3 {
+		for i := 0; i <= len(xs)-3; i++ {
+			beginArcX, beginArcY := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
+			endArcX, endArcY := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
 
-	for i := 0; i < len(coords)-1; i++ {
-		canvas.Line(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
-		drawHatching(canvas, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
+			if i == 0 {
+				//render first line
+				drawHatchingOnLine(canvas, xs[i], ys[i], beginArcX, beginArcY, style)
+			} else {
+				x, y := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], percentLength)
+				drawHatchingOnLine(canvas, x, y, beginArcX, beginArcY, style)
+			}
+
+			renderHatchingOnBezier(canvas, beginArcX, beginArcY, xs[i+1], ys[i+1], endArcX, endArcY, style)
+
+			if i == len(xs)-3 {
+				//render last line
+				drawHatchingOnLine(canvas, endArcX, endArcY, xs[i+2], ys[i+2], style)
+			} else {
+				x, y := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], 1-percentLength)
+				drawHatchingOnLine(canvas, endArcX, endArcY, x, y, style)
+			}
+		}
+	} else {
+		drawHatchingOnLine(canvas, xs[0], ys[0], xs[1], ys[1], style)
 	}
 
 	return nil
 }
 
-func drawHatching(canvas *svg.SVG, beginX, beginY, endX, endY int, style string) {
+func renderPolygonWithHatchings(canvas *svg.SVG, coords []geometry.Coord, colorOuter string) {
+	style := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", colorOuter, 2)
+
+	for i := 0; i < len(coords)-1; i++ {
+		canvas.Line(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
+		drawHatchingOnLine(canvas, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
+	}
+
+}
+
+func renderHatchingOnBezier(canvas *svg.SVG, beginX, beginY, controlX, controlY, endX, endY int, style string) {
+	bezierXs, bezierYs := bezierToPolyline(beginX, beginY, controlX, controlY, endX, endY, 0.1)
+	percentSizeSegment := 8.0 / getLengthPolyline(bezierXs, bezierYs)
+	if percentSizeSegment > 1 {
+		percentSizeSegment = 1
+	}
+
+	for j := 0.; j < 1; j += percentSizeSegment {
+		beginHatchX, beginHatchY := getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j)
+		nextX, nextY := getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j+percentSizeSegment)
+		endHatchX, endHatchY := rotatePoint(int(beginHatchX), int(beginHatchY), int(nextX), int(nextY), -90)
+		canvas.Line(int(beginHatchX), int(beginHatchY), int(endHatchX), int(endHatchY), style)
+	}
+
+}
+func drawHatchingOnLine(canvas *svg.SVG, beginX, beginY, endX, endY int, style string) {
 	length := 8
 	distance := distanceBeetweenPoints(beginX, beginY, endX, endY)
 	percentSizeSegment := float64(length) / distance
 	count := int(distance) / length
 
 	currentPointPercent := percentSizeSegment
-	for i := 0; i < count-1; i += 2 {
+	for i := 0; i < count; i++ {
 		x1, y1 := getPointOnLine(beginX, beginY, endX, endY, currentPointPercent)
 		currentPointPercent += percentSizeSegment
 		x2, y2 := getPointOnLine(beginX, beginY, endX, endY, currentPointPercent)
-		currentPointPercent += percentSizeSegment
 
 		resultX, resultY := rotatePoint(x1, y1, x2, y2, -90)
 
@@ -707,15 +757,14 @@ func contains(sample string, list []string) bool {
 
 func renderCurve(canvas *svg.SVG, coords []geometry.Coord, style string) {
 	xs, ys := coordToXsYs(coords)
-	count := len(xs)
+	percentLength := 0.5
 
-	if count <= 1 {
+	if len(xs) <= 1 || len(xs) != len(ys) {
 		panic("object must have more than one point")
 	}
 
-	percentLength := 0.5
-	if count >= 3 {
-		for i := 0; i <= count-3; i++ {
+	if len(xs) >= 3 {
+		for i := 0; i <= len(xs)-3; i++ {
 			endArcX, endArcY := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
 			beginArcX, beginArcY := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
 
@@ -728,7 +777,7 @@ func renderCurve(canvas *svg.SVG, coords []geometry.Coord, style string) {
 
 			canvas.Qbez(beginArcX, beginArcY, xs[i+1], ys[i+1], endArcX, endArcY, style)
 
-			if i == count-3 {
+			if i == len(xs)-3 {
 				canvas.Line(endArcX, endArcY, xs[i+2], ys[i+2], style)
 			} else {
 				x, y := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], 1-percentLength)
