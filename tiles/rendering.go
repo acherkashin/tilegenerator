@@ -437,21 +437,21 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 
 	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
 
-	renderPathRouteAviationFlight(coords, canvas, object, tile)
+	style := fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.ColorOuter, 1)
+	// renderPolyline(canvas, coords, style)
+	renderCurve(canvas, coords, style)
+
+	if object.Code != "1000000004" {
+		xs, ys := coordToXsYs(coords)
+		curveXs, curveYs := polylineToCurvePoints(xs, ys)
+		x, y, angel := getCenterPolylineAndAngel(curveXs, curveYs)
+		renderImageOnRouteAviation(canvas, object, angel, x, y, tile.Z)
+	}
+
 	renderArrowRouteAviationFlight(coords, canvas, object, tile)
 
 	canvas.Gend()
 	return nil
-}
-
-func renderPathRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, object *entities.MapObject, tile *Tile) {
-	style := fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.ColorOuter, 1)
-	renderPolyline(canvas, coords, style)
-
-	if object.Code != "1000000004" {
-		x, y, angel := getCenterPolylineAndAngel(coords)
-		renderImageOnRouteAviation(canvas, object, angel, x, y, tile.Z)
-	}
 }
 
 func renderPolyline(canvas *svg.SVG, coords []geometry.Coord, style string) {
@@ -461,21 +461,21 @@ func renderPolyline(canvas *svg.SVG, coords []geometry.Coord, style string) {
 }
 
 //angel is angel between line and axis Ox
-func getCenterPolylineAndAngel(coords []geometry.Coord) (x, y int, angel float64) {
+func getCenterPolylineAndAngel(xs, ys []int) (x, y int, angel float64) {
 	var lineLength float64
 	var i int
-	halfLength := getLengthPolyline(coords) / 2
+	halfLength := getLengthPolyline(xs, ys) / 2
 
-	for i = 0; i < len(coords) && halfLength > 0; i++ {
-		lineLength = distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
+	for i = 0; i < len(xs) && halfLength > 0; i++ {
+		lineLength = distanceBeetweenPoints(xs[i], ys[i], xs[i+1], ys[i+1])
 		halfLength -= lineLength
 	}
 
 	percentPosition := 1 - (-1.0)*halfLength/lineLength
 
-	centerX, centerY := getPointOnLine(int(coords[i-1].X), int(coords[i-1].Y), int(coords[i].X), int(coords[i].Y), percentPosition)
+	centerX, centerY := getPointOnLine(xs[i-1], ys[i-1], xs[i], ys[i], percentPosition)
 
-	angel = getAngel(int(coords[i-1].X), int(coords[i-1].Y), int(coords[i].X), int(coords[i].Y))
+	angel = getAngel(xs[i-1], ys[i-1], xs[i], ys[i])
 
 	return centerX, centerY, angel
 }
@@ -508,7 +508,8 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 
 	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
 
-	halfLength := getLengthPolyline(coords) / 2
+	xs, ys := coordToXsYs(coords)
+	halfLength := getLengthPolyline(xs, ys) / 2
 	alreadyDrawn := false
 
 	for i := 0; i < len(coords)-1; i++ {
@@ -606,8 +607,7 @@ func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, ang
 	settings, err := settings.GetSettings(&pathConfig)
 
 	if err == nil {
-		// href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, object.ID)
-		href := fmt.Sprintf("%v/api/maps/object/1404842/png", settings.UrlAPI)
+		href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, object.ID)
 		if result, err := utils.GetImgByURL(href); err == nil {
 			imgBase64Str := base64.StdEncoding.EncodeToString(result)
 
@@ -626,11 +626,11 @@ func renderImageOnRouteAviation(canvas *svg.SVG, object *entities.MapObject, ang
 	}
 }
 
-func getLengthPolyline(coords []geometry.Coord) float64 {
+func getLengthPolyline(xs, ys []int) float64 {
 	sum := 0.0
 
-	for i := 0; i < len(coords)-1; i++ {
-		sum += distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
+	for i := 0; i < len(xs)-1; i++ {
+		sum += distanceBeetweenPoints(xs[i], ys[i], xs[i+1], ys[i+1])
 	}
 
 	return sum
@@ -808,4 +808,61 @@ func coordToXsYs(coords []geometry.Coord) ([]int, []int) {
 	}
 
 	return xs, ys
+}
+
+func getPointBezier(bx1, by1, cx2, cy2, ex3, ey3, t float64) (float64, float64) {
+	x := equationBezier(bx1, cx2, ex3, t)
+	y := equationBezier(by1, cy2, ey3, t)
+
+	return x, y
+}
+
+func equationBezier(px1, px2, px3, t float64) float64 {
+	value := math.Pow(1-t, 2)*px1 + 2*t*(1-t)*px2 + math.Pow(t, 2)*px3
+
+	return value
+}
+
+//step must be more 0 and less 1
+func bezierToPolyline(bx1, by1, cx2, cy2, ex3, ey3 int, step float64) ([]int, []int) {
+	var xs []int
+	var ys []int
+
+	for i := .0; i <= 1; i += step {
+		x, y := getPointBezier(float64(bx1), float64(by1), float64(cx2), float64(cy2), float64(ex3), float64(ey3), i)
+		xs = append(xs, int(x))
+		ys = append(ys, int(y))
+	}
+
+	return xs, ys
+}
+
+func polylineToCurvePoints(xs, ys []int) ([]int, []int) {
+	count := len(xs)
+	percentLength := 0.5
+
+	curveXs := []int{xs[0]}
+	curveYs := []int{ys[0]}
+
+	for i := 0; i < count-2; i++ {
+		beginArcX, beginArcY := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
+		endArcX, endArcY := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
+
+		bezierXs, bezierYs := bezierToPolyline(beginArcX, beginArcY, xs[i+1], ys[i+1], endArcX, endArcY, 0.1)
+
+		curveXs = concat(curveXs, bezierXs)
+		curveYs = concat(curveYs, bezierYs)
+	}
+
+	curveXs = append(curveXs, xs[count-1])
+	curveYs = append(curveYs, ys[count-1])
+
+	return curveXs, curveYs
+}
+
+func concat(array1, array2 []int) []int {
+	newslice := make([]int, len(array1)+len(array2))
+	copy(newslice, array1)
+	copy(newslice[len(array1):], array2)
+	return newslice
 }
