@@ -522,8 +522,8 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 	renderCurve(canvas, coords, fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
 
 	if object.Code != "1000000002" {
-		// xs, ys = polylineToCurvePoints(xs, ys)
-		x, y, angel := getCenterPolylineAndAngel(xs, ys)
+		curveXs, curveYs := polylineToCurvePoints(xs, ys)
+		x, y, angel := getCenterPolylineAndAngel(curveXs, curveYs)
 		renderImageOnLine(canvas, object.Scale, angel, x, y, object.ID, tile.Z)
 	}
 	if object.Label != "" {
