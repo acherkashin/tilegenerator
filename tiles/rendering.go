@@ -63,6 +63,7 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 		object.Geometry.ConvertCoords(f)
 
 		for _, style := range *styles {
+
 			if style.ShouldRender(&object) {
 				style.Render(&object, canvas)
 
@@ -446,7 +447,14 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 		xs, ys := coordToXsYs(coords)
 		xs, ys = polylineToCurvePoints(xs, ys)
 		x, y, angel := getCenterPolylineAndAngel(xs, ys)
-		renderImageOnLine(canvas, object, angel, x, y, tile.Z)
+		renderImageOnLine(canvas, object.Scale, angel, x, y, object.ID, tile.Z)
+	}
+
+	if object.Label != "" {
+		xs, ys := coordToXsYs(coords)
+		xs, ys = polylineToCurvePoints(xs, ys)
+		x, y, _ := getCenterPolylineAndAngel(xs, ys)
+		renderTextOnLine(canvas, x, y, object.Label, object.Position)
 	}
 
 	renderArrowRouteAviationFlight(coords, canvas, object, tile)
@@ -516,7 +524,11 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 	if object.Code != "1000000002" {
 		// xs, ys = polylineToCurvePoints(xs, ys)
 		x, y, angel := getCenterPolylineAndAngel(xs, ys)
-		renderImageOnLine(canvas, object, angel, x, y, tile.Z)
+		renderImageOnLine(canvas, object.Scale, angel, x, y, object.ID, tile.Z)
+	}
+	if object.Label != "" {
+		x, y, _ := getCenterPolylineAndAngel(xs, ys)
+		renderTextOnLine(canvas, x, y, object.Label, object.Position)
 	}
 
 	renderRightPartPatrollingArea(canvas, xs[0], ys[0], xs[1], ys[1], object.ColorInner, object.ColorOuter)
@@ -588,19 +600,20 @@ func setDefaultColor(object *entities.MapObject) {
 	}
 }
 
-func renderImageOnLine(canvas *svg.SVG, object *entities.MapObject, angel float64, x, y, zoom int) {
+//this function is used temporary, till we don't use styles for rendering of primitives
+func renderImageOnLine(canvas *svg.SVG, scale, angel float64, x, y, id, zoom int) {
 	pathConfig := "./config.toml"
 	settings, err := settings.GetSettings(&pathConfig)
 
 	if err == nil {
-		href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, object.ID)
+		href := fmt.Sprintf("%v/api/maps/object/%v/png", settings.UrlAPI, id)
 		if result, err := utils.GetImgByURL(href); err == nil {
 			imgBase64Str := base64.StdEncoding.EncodeToString(result)
 
 			img2html := "data:image/png;base64," + imgBase64Str
 
-			imageWidth := 5 + 5*zoom
-			imageHeight := 7 + 6*zoom
+			imageWidth := scale * float64(5+5*zoom)
+			imageHeight := scale * float64(7+6*zoom)
 
 			canvas.Image(x-(int)(imageWidth/2.0),
 				y-(int)(imageHeight/2.0),
@@ -610,6 +623,32 @@ func renderImageOnLine(canvas *svg.SVG, object *entities.MapObject, angel float6
 				fmt.Sprintf("transform=\"rotate(%v,%v,%v)\"", angel-90, x, y))
 		}
 	}
+}
+
+//this function is used temporary, till we don't use styles for rendering of primitives
+func renderTextOnLine(svg *svg.SVG, x, y int, label, position string) {
+	var xShift, yShift int
+
+	if position == "" {
+		position = "bottom"
+	}
+
+	switch position {
+	case "top":
+		xShift = -20
+		yShift = -40
+	case "bottom":
+		xShift = -20
+		yShift = 40
+	case "left":
+		xShift = -60
+		yShift = 10
+	case "right":
+		xShift = 20
+		yShift = 10
+	}
+
+	svg.Text(int(x+xShift), int(y+yShift), label)
 }
 
 func getLengthPolyline(xs, ys []int) float64 {
