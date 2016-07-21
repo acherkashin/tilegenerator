@@ -20,7 +20,9 @@ _cgo_export.*
 
 _testmain.go
 
+*.bat
 *.exe
+*.exe~
 *.test
 *.prof
 app
