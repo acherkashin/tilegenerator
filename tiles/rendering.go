@@ -62,33 +62,35 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 	for _, object := range *objects {
 		object.Geometry.ConvertCoords(f)
 
-		for _, style := range *styles {
+		// for _, style := range *styles {
 
-			if style.ShouldRender(&object) {
-				style.Render(&object, canvas)
+		// 	if style.ShouldRender(&object) {
+		// 		style.Render(&object, canvas)
 
-				if object.IsAntenna && object.NeedShowDirectionalDiagram {
-					RenderBeamDiagram(canvas, &object, tile)
-				}
+		// 		if object.IsAntenna && object.NeedShowDirectionalDiagram {
+		// 			RenderBeamDiagram(canvas, &object, tile)
+		// 		}
 
-				if object.NeedShowAzimuthalGrid {
-					RenderAzimuthalGrid(canvas, &object, tile)
-				}
-			}
-		}
+		// 		if object.NeedShowAzimuthalGrid {
+		// 			RenderAzimuthalGrid(canvas, &object, tile)
+		// 		}
+		// 	}
+		// }
 
 		if contains(object.Code, patrollingAreaCodes) {
-			RenderPatrollingArea(canvas, &object, tile)
-		} else if contains(object.Code, routeAviationsFlightCodes) {
-			RenderRouteAviationFlight(canvas, &object, tile)
-		} else if object.Code == plannedAttackMainDirectionCode {
-			RenderPlannedAttackMainDirection(canvas, &object, tile)
-		} else if object.Code == attackMainDirectionCode {
-			RenderAttackMainDirection(canvas, &object, tile)
-		} else if object.Code == completedProvideActionCode {
-			RenderCompletedProvideAction(canvas, &object, tile)
-		} else if object.Code == pitCode {
-			RenderPit(canvas, &object, tile)
+			RenderNewObject(canvas, &object, tile)
+
+			// RenderPatrollingArea(canvas, &object, tile)
+			// } else if contains(object.Code, routeAviationsFlightCodes) {
+			// 	RenderRouteAviationFlight(canvas, &object, tile)
+			// } else if object.Code == plannedAttackMainDirectionCode {
+			// 	RenderPlannedAttackMainDirection(canvas, &object, tile)
+			// } else if object.Code == attackMainDirectionCode {
+			// 	RenderAttackMainDirection(canvas, &object, tile)
+			// } else if object.Code == completedProvideActionCode {
+			// 	RenderCompletedProvideAction(canvas, &object, tile)
+			// } else if object.Code == pitCode {
+			// 	RenderPit(canvas, &object, tile)
 		}
 	}
 
@@ -274,6 +276,66 @@ func getMax(chartPoints []*chartPoint) float64 {
 	}
 
 	return max
+}
+
+func RenderNewObject(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	line, err := object.Geometry.AsLineString()
+	if err != nil {
+		return err
+	}
+	setDefaultColor(object)
+
+	styleLine := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;stroke-dasharray: 10 2 2 2;", object.ColorOuter, 2)
+	renderCurve(canvas, line.Coordinates, styleLine)
+	xs, ys := coordToXsYs(line.Coordinates)
+	count := len(xs)
+
+	renderRightPartNewObject(canvas, xs[0], ys[0], xs[1], ys[1], object.ColorInner, object.ColorOuter)
+	renderLeftPartNewObject(canvas, xs[count-2], ys[count-2], xs[count-1], ys[count-1], object.ColorInner, object.ColorOuter)
+
+	return nil
+}
+
+func renderRightPartNewObject(canvas *svg.SVG, x1, y1, x2, y2 int, colorInner, colorOuter string) {
+	radiusX := 10
+	radiusY := radiusX / 2
+	centerX, centerY := getLineCenter(x1, y1, x2, y2)
+	distance := distanceBeetweenPoints(x1, y1, x2, y2)
+	rightLinePointX, rightLinePointY := centerX+int(distance/2), centerY
+
+	canvas.Gtransform(fmt.Sprintf("rotate(%v,%v,%v)", getAngel(x1, y1, x2, y2), centerX, centerY))
+
+	canvas.Arc(rightLinePointX,
+		rightLinePointY,
+		radiusX,
+		radiusY,
+		0, false, true,
+		rightLinePointX+2*radiusX,
+		rightLinePointY,
+		fmt.Sprintf("stroke: %v; fill: none;stroke-width: %v;", colorOuter, 2))
+
+	canvas.Gend()
+}
+
+func renderLeftPartNewObject(canvas *svg.SVG, x1, y1, x2, y2 int, colorInner, colorOuter string) {
+	radiusX := 10
+	radiusY := radiusX / 2
+	centerX, centerY := getLineCenter(x1, y1, x2, y2)
+	distance := distanceBeetweenPoints(x1, y1, x2, y2)
+	leftLinePointX, leftLinePointY := centerX-int(distance/2), centerY
+
+	canvas.Gtransform(fmt.Sprintf("rotate(%v,%v,%v)", getAngel(x1, y1, x2, y2), centerX, centerY))
+
+	canvas.Arc(leftLinePointX-2*radiusX,
+		leftLinePointY,
+		radiusX,
+		radiusY,
+		0, false, true,
+		leftLinePointX,
+		leftLinePointY,
+		fmt.Sprintf("stroke: %v; fill: none;stroke-width: %v;", colorOuter, 2))
+
+	canvas.Gend()
 }
 
 func RenderPit(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
