@@ -84,8 +84,9 @@ func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile, situationsIds stri
 		WHERE type_id NOT in (170, 11) and 
 		(min_zoom <= %v or min_zoom is null) and
 		(max_zoom >= %v or max_zoom is null) and %v
-		ST_Intersects(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom);
-		`, gdb.geomcol, gdb.geomtable, tile.Z, tile.Z, situationQuery, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South)
+		(ST_Intersects(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom) or
+	   ST_Intersects(ST_SetSRID(ST_AsText(ST_Envelope(maps.maps_objects.bbox::geometry)), 4326), ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326)));
+		`, gdb.geomcol, gdb.geomtable, tile.Z, tile.Z, situationQuery, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South)
 
 	rows, err := gdb.conn.Query(q)
 	if err == nil {
@@ -111,7 +112,8 @@ func (gdb *GeometryDB) GetAllSpecialObject(tile *tiles.Tile, situationsIds strin
 		WHERE (type_id BETWEEN 149 AND 165) OR (type_id IN (47,74,408,407,366,432)) and
 		(min_zoom <= %v or min_zoom is null) and
 		(max_zoom >= %v or max_zoom is null) and %v
-		ST_Intersects(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom);`, gdb.geomcol, gdb.geomtable, tile.Z, tile.Z, situationQuery, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South)
+		(ST_Intersects(ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326), the_geom) or
+	 	ST_Intersects(ST_SetSRID(ST_AsText(ST_Envelope(maps.maps_objects.bbox::geometry)), 4326), ST_SetSRID(ST_MakeBox2D(ST_Point(%v, %v), ST_Point(%v, %v)), 4326)));`, gdb.geomcol, gdb.geomtable, tile.Z, tile.Z, situationQuery, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South, tile.BoundingBox.West, tile.BoundingBox.North, tile.BoundingBox.East, tile.BoundingBox.South)
 
 	rows, err := gdb.conn.Query(q)
 
