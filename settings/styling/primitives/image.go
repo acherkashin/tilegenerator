@@ -29,7 +29,9 @@ func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 
 	img.Rotate = object.Azimut
 	img.Scale = object.Scale
-	img.Width, img.Height = img.Width*int64(img.Scale), img.Height*int64(img.Scale)
+	tmpH := float64(img.Height)
+	tmpW := float64(img.Width)
+	img.Width, img.Height = int64(math.Floor(tmpW*img.Scale)), int64(math.Floor(tmpH*img.Scale))
 
 	if result, err := utils.GetImgByURL(resultHref); err == nil {
 		img.bytes = result
