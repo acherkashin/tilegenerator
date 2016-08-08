@@ -78,8 +78,6 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 		}
 
 		if contains(object.Code, patrollingAreaCodes) {
-			RenderNewObject(canvas, &object, tile)
-
 			RenderPatrollingArea(canvas, &object, tile)
 		} else if contains(object.Code, routeAviationsFlightCodes) {
 			RenderRouteAviationFlight(canvas, &object, tile)

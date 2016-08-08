@@ -42,10 +42,12 @@ func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 			img.Rotate)
 
 		if object.NeedMirrorReflection {
-			svg.CSS("image { transform: scale(-1, 1) }")
+			svg.CSS(fmt.Sprintf("#id%v { transform: scale(-1, 1) }", object.ID))
 		}
 
+		svg.Gid(fmt.Sprintf("id%v", strconv.Itoa(object.ID)))
 		svg.Image(-int(img.Width)/2, -int(img.Height)/2, int(img.Width), int(img.Height), "data:"+img.Format+";base64,"+inlineBase64Img)
+		svg.Gend()
 		svg.Gend()
 	} else {
 		fmt.Printf("Can't render %s because of err: '%s'", resultHref, err.Error())
