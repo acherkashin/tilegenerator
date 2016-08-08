@@ -38,6 +38,11 @@ func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 			int(math.Floor(point.Coordinates.X+.5)),
 			int(math.Floor(point.Coordinates.Y+0.5)),
 			img.Rotate)
+
+		if object.NeedMirrorReflection {
+			svg.CSS("image { transform: scale(-1, 1) }")
+		}
+
 		svg.Image(-int(img.Width)/2, -int(img.Height)/2, int(img.Width), int(img.Height), "data:"+img.Format+";base64,"+inlineBase64Img)
 		svg.Gend()
 	} else {
