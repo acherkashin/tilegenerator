@@ -9,29 +9,36 @@ import (
 
 // MapObject represents a geometry on a map
 type MapObject struct {
-	ID                         int
-	StyleName                  string
-	TypeID                     int
-	Label                      string
-	Position                   string
-	Size                       int
-	IsAntenna                  bool
-	NeedShowAzimuthalGrid      bool
-	Geometry                   geometry.Geometry
+	ID            int
+	StyleName     string
+	TypeID        int
+	Label         string
+	Code          string
+	Position      string
+	AzimuthalGrid AzimuthalGrid
+	View          View
+	Geometry      geometry.Geometry
+}
+
+type AzimuthalGrid struct {
 	BeamWidth                  float64
 	Sidelobes                  float64
 	Azimut                     float64
-	Distance                   float64
+	IsAntenna                  bool
+	NeedShowAzimuthalGrid      bool
 	NeedShowDirectionalDiagram bool
-	NeedMirrorReflection       bool
-	ColorOuter                 string
-	ColorInner                 string
-	Code                       string
-	Scale                      float64
+}
+
+type View struct {
+	ColorOuter           string
+	ColorInner           string
+	NeedMirrorReflection bool
+	Scale                float64
+	Size                 int
 }
 
 // NewObject creates new MapObject with a parsed from WKT geometry
-func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid, needShowDirectionalDiagram, needMirrorReflection bool, beamWidth, sidelobes, azimut, distance float64, colorOuter, colorInner, code string, scale float64) (*MapObject, error) {
+func NewObject(id int, typeId int, wkt string, azimuthalGrid AzimuthalGrid, view View, code string) (*MapObject, error) {
 	geo, err := wktparser.Parse(wkt)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -39,19 +46,10 @@ func NewObject(id int, typeId int, wkt string, isAntenna, needShowAzimuthalGrid,
 	}
 
 	return &MapObject{
-		ID:                         id,
-		TypeID:                     typeId,
-		Geometry:                   geo,
-		IsAntenna:                  isAntenna,
-		NeedShowAzimuthalGrid:      needShowAzimuthalGrid,
-		BeamWidth:                  beamWidth,
-		Sidelobes:                  sidelobes,
-		Azimut:                     azimut,
-		Distance:                   distance,
-		NeedShowDirectionalDiagram: needShowDirectionalDiagram,
-		NeedMirrorReflection:       needMirrorReflection,
-		ColorOuter:                 colorOuter,
-		ColorInner:                 colorInner,
-		Code:                       code,
-		Scale:                      scale}, nil
+		ID:            id,
+		TypeID:        typeId,
+		Geometry:      geo,
+		AzimuthalGrid: azimuthalGrid,
+		View:          view,
+		Code:          code}, nil
 }

@@ -907,6 +907,7 @@ func equationBezier(px1, px2, px3, t float64) float64 {
 }
 
 //step must be more 0 and less 1
+//get points of bezier curve by three points
 func bezierToPolyline(bx1, by1, cx2, cy2, ex3, ey3 int, step float64) ([]int, []int) {
 	var xs []int
 	var ys []int
@@ -920,6 +921,7 @@ func bezierToPolyline(bx1, by1, cx2, cy2, ex3, ey3 int, step float64) ([]int, []
 	return xs, ys
 }
 
+//convert points of polyline to points of curve bezier
 func polylineToCurvePoints(xs, ys []int) ([]int, []int) {
 	count := len(xs)
 	percentLength := 0.5
