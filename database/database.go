@@ -28,28 +28,21 @@ func (gdb *GeometryDB) rowsToMapObjects(rows *sql.Rows) ([]entities.MapObject, e
 	for tmpRows.Next() {
 		var ID, typeID int
 		var wkt, label, textPosition, colorOuter, colorInner, code string
-		var isShortwaveAntenna, needShowAzimuthalGrid, needShowDirectionalDiagram, needMirrorReflection bool
+		var isShortwaveAntenna, needShowAzimuthalGrid, needShowDirectionalDiagram, needMirrorReflection, useCurveBezier bool
 		var sidelobes, beamWidth, azimut, distance, scale float64
 
-		err := tmpRows.Scan(&ID, &typeID, &wkt, &label, &isShortwaveAntenna, &needShowAzimuthalGrid, &beamWidth, &sidelobes, &azimut, &distance, &needShowDirectionalDiagram, &textPosition, &colorOuter, &colorInner, &code, &scale, &needMirrorReflection)
+		err := tmpRows.Scan(&ID, &typeID, &wkt, &label, &isShortwaveAntenna,
+			&needShowAzimuthalGrid, &beamWidth, &sidelobes, &azimut, &distance,
+			&needShowDirectionalDiagram, &textPosition, &colorOuter, &colorInner,
+			&code, &scale, &needMirrorReflection, &useCurveBezier)
+
 		counter++
 
 		if err == nil {
-			view := &entities.View{
-				ColorOuter:           colorOuter,
-				ColorInner:           colorInner,
-				NeedMirrorReflection: needMirrorReflection,
-				Scale:                scale,
-				// Size:                 size
-			}
+			view := entities.NewView(colorOuter, colorInner, needMirrorReflection, useCurveBezier, scale)
 
-			azimuthalGrid := &entities.AzimuthalGrid{
-				BeamWidth:                  beamWidth,
-				Sidelobes:                  sidelobes,
-				Azimut:                     azimut,
-				IsAntenna:                  isShortwaveAntenna,
-				NeedShowAzimuthalGrid:      needShowAzimuthalGrid,
-				NeedShowDirectionalDiagram: needShowDirectionalDiagram}
+			azimuthalGrid := entities.NewAzimuthalGrid(beamWidth, sidelobes, azimut,
+				isShortwaveAntenna, needShowAzimuthalGrid, needShowDirectionalDiagram)
 
 			mapObj, mapObjErr := entities.NewObject(ID, typeID, wkt, code, *azimuthalGrid, *view)
 			if mapObjErr == nil {
@@ -80,7 +73,6 @@ func (gdb *GeometryDB) InitConnection(username string, connstring string, geomta
 		gdb.geomcol = geomcol
 	} else {
 		fmt.Printf("Database connection error: %v\n", err)
-		fmt.Printf("Database connection error: %v\n", err)
 		panic("DB Error")
 	}
 }
@@ -96,7 +88,8 @@ func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile, situationsIds stri
 		SELECT id,type_id, ST_AsText( ST_Transform( %s, 4326 ) ), coalesce(text1, ''), coalesce(is_shortwave_antenna, false),
 		coalesce(need_show_azimuthal_grid, false),  coalesce(beam_width, '1'), coalesce(sidelobes, '1'), coalesce(azimut, '0'),
 		coalesce(distance, '0'), coalesce(need_show_directional_diagram, 'false'), coalesce(text_position, 'bottom'),
-		coalesce(color_outer, ''), coalesce(color_inner, ''), coalesce(code, ''), scale, coalesce(need_mirror_reflection, 'false')  from %s
+		coalesce(color_outer, ''), coalesce(color_inner, ''), coalesce(code, ''), scale, coalesce(need_mirror_reflection, 'false'),
+		coalesce(use_curve_bezier, 'false')  from %s
 		WHERE type_id NOT in (170, 11) and 
 		(min_zoom <= %v or min_zoom is null) and
 		(max_zoom >= %v or max_zoom is null) and %v
@@ -124,7 +117,8 @@ func (gdb *GeometryDB) GetAllSpecialObject(tile *tiles.Tile, situationsIds strin
 	q := fmt.Sprintf(`SELECT id,type_id, ST_AsText( ST_Transform( %s, 4326 ) ), coalesce(text1, ''), coalesce(is_shortwave_antenna, false),
 		coalesce(need_show_azimuthal_grid, false) , coalesce(beam_width, '0'), coalesce(sidelobes, '1'),	coalesce(azimut, '1'),
 		coalesce(distance, '0'), coalesce(need_show_directional_diagram, 'false'), coalesce(text_position, 'bottom'),
-		coalesce(color_outer, ''), coalesce(color_inner, ''), coalesce(code, ''), scale, coalesce(need_mirror_reflection, 'false')   from %s 
+		coalesce(color_outer, ''), coalesce(color_inner, ''), coalesce(code, ''), scale, coalesce(need_mirror_reflection, 'false'),
+		coalesce(use_curve_bezier, 'false')  from %s 
 		WHERE (type_id BETWEEN 149 AND 165) OR (type_id IN (47,74,408,407,366,432)) and
 		(min_zoom <= %v or min_zoom is null) and
 		(max_zoom >= %v or max_zoom is null) and %v

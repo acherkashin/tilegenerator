@@ -61,6 +61,7 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 	canvas.Start(TileSize, TileSize)
 	for _, object := range *objects {
 		object.Geometry.ConvertCoords(f)
+		object.View.UseCurveBezier = true
 
 		for _, style := range *styles {
 
@@ -283,7 +284,9 @@ func RenderNewObject(canvas *svg.SVG, object *entities.MapObject, tile *Tile) er
 	setDefaultColor(object)
 
 	styleLine := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;stroke-dasharray: 10 2 2 2;", object.View.ColorOuter, 2)
-	renderCurve(canvas, line.Coordinates, styleLine)
+
+	renderCurveOrPolyline(canvas, object.View.UseCurveBezier, styleLine, line.Coordinates)
+
 	xs, ys := coordToXsYs(line.Coordinates)
 	count := len(xs)
 
@@ -341,9 +344,19 @@ func RenderPit(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
 		return err
 	}
 
-	coords := line.Coordinates
 	setDefaultColor(object)
 	style := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", object.View.ColorOuter, 2)
+
+	if object.View.UseCurveBezier {
+		renderCurveBezierWithHatching(canvas, line.Coordinates, style)
+	} else {
+		renderPolygonWithHatching(canvas, line.Coordinates, style)
+	}
+
+	return nil
+}
+
+func renderCurveBezierWithHatching(canvas *svg.SVG, coords []geometry.Coord, style string) {
 	xs, ys := coordToXsYs(coords)
 	percentLength := 0.5
 	renderCurve(canvas, coords, style)
@@ -374,13 +387,9 @@ func RenderPit(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
 	} else {
 		drawHatchingOnLine(canvas, xs[0], ys[0], xs[1], ys[1], style)
 	}
-
-	return nil
 }
 
-func renderPolygonWithHatchings(canvas *svg.SVG, coords []geometry.Coord, colorOuter string) {
-	style := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: none;", colorOuter, 2)
-
+func renderPolygonWithHatching(canvas *svg.SVG, coords []geometry.Coord, style string) {
 	for i := 0; i < len(coords)-1; i++ {
 		canvas.Line(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
 		drawHatchingOnLine(canvas, int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y), style)
@@ -499,8 +508,8 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
 
 	style := fmt.Sprintf("stroke: %v; stroke-width: %v; fill: none; stroke-dasharray: 10;", object.View.ColorOuter, 1)
-	// renderPolyline(canvas, coords, style)
-	renderCurve(canvas, coords, style)
+
+	renderCurveOrPolyline(canvas, object.View.UseCurveBezier, style, coords)
 
 	if object.Code != "1000000004" {
 		xs, ys := coordToXsYs(coords)
@@ -577,14 +586,17 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 	canvas.Group("id=\"id" + strconv.Itoa(object.ID) + "\"")
 
 	xs, ys := coordToXsYs(coords)
-	// renderPolyline(canvas, coords, fmt.Sprintf("stroke: %v; fill: none;", object.ColorOuter))
-	renderCurve(canvas, coords, fmt.Sprintf("stroke: %v; fill: none;", object.View.ColorOuter))
+
+	style := fmt.Sprintf("stroke: %v; fill: none;", object.View.ColorOuter)
+
+	renderCurveOrPolyline(canvas, object.View.UseCurveBezier, style, coords)
 
 	if object.Code != "1000000002" {
 		curveXs, curveYs := polylineToCurvePoints(xs, ys)
 		x, y, angel := getCenterPolylineAndAngel(curveXs, curveYs)
 		renderImageOnLine(canvas, object.View.Scale, angel, x, y, object.ID, tile.Z)
 	}
+
 	if object.Label != "" {
 		x, y, _ := getCenterPolylineAndAngel(xs, ys)
 		renderTextOnLine(canvas, x, y, object.Label, object.Position)
@@ -950,4 +962,13 @@ func concat(array1, array2 []int) []int {
 	copy(newslice, array1)
 	copy(newslice[len(array1):], array2)
 	return newslice
+}
+
+func renderCurveOrPolyline(canvas *svg.SVG, isRenderCurve bool, style string, coord []geometry.Coord) {
+	if isRenderCurve {
+		renderCurve(canvas, coord, style)
+	} else {
+		renderPolyline(canvas, coord, style)
+	}
+
 }
