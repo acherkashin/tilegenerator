@@ -61,7 +61,6 @@ func RenderTile(tile *Tile, objects *[]entities.MapObject, styles *map[string]st
 	canvas.Start(TileSize, TileSize)
 	for _, object := range *objects {
 		object.Geometry.ConvertCoords(f)
-		object.View.UseCurveBezier = true
 
 		for _, style := range *styles {
 
