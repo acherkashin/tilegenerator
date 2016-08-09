@@ -27,8 +27,8 @@ func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 	point, _ := object.Geometry.AsPoint()
 	resultHref := strings.Replace(img.Href, "${ID}", strconv.Itoa(object.ID), 1)
 
-	img.Rotate = object.Azimut
-	img.Scale = object.Scale
+	img.Rotate = object.AzimuthalGrid.Azimut
+	img.Scale = object.View.Scale
 	tmpH := float64(img.Height)
 	tmpW := float64(img.Width)
 	img.Width, img.Height = int64(math.Floor(tmpW*img.Scale)), int64(math.Floor(tmpH*img.Scale))
@@ -41,7 +41,7 @@ func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 			int(math.Floor(point.Coordinates.Y+0.5)),
 			img.Rotate)
 
-		if object.NeedMirrorReflection {
+		if object.View.NeedMirrorReflection {
 			svg.CSS(fmt.Sprintf("#id%v { transform: scale(-1, 1) }", object.ID))
 		}
 

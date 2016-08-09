@@ -35,7 +35,23 @@ func (gdb *GeometryDB) rowsToMapObjects(rows *sql.Rows) ([]entities.MapObject, e
 		counter++
 
 		if err == nil {
-			mapObj, mapObjErr := entities.NewObject(ID, typeID, wkt, isShortwaveAntenna, needShowAzimuthalGrid, needShowDirectionalDiagram, needMirrorReflection, beamWidth, sidelobes, azimut, distance, colorOuter, colorInner, code, scale)
+			view := &entities.View{
+				ColorOuter:           colorOuter,
+				ColorInner:           colorInner,
+				NeedMirrorReflection: needMirrorReflection,
+				Scale:                scale,
+				// Size:                 size
+			}
+
+			azimuthalGrid := &entities.AzimuthalGrid{
+				BeamWidth:                  beamWidth,
+				Sidelobes:                  sidelobes,
+				Azimut:                     azimut,
+				IsAntenna:                  isShortwaveAntenna,
+				NeedShowAzimuthalGrid:      needShowAzimuthalGrid,
+				NeedShowDirectionalDiagram: needShowDirectionalDiagram}
+
+			mapObj, mapObjErr := entities.NewObject(ID, typeID, wkt, code, *azimuthalGrid, *view)
 			if mapObjErr == nil {
 				mapObj.Label = label
 				mapObj.Position = textPosition

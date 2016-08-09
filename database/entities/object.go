@@ -20,6 +20,7 @@ type MapObject struct {
 	Geometry      geometry.Geometry
 }
 
+//AzimuthalGrid - information about azimuthalGrid for  map object
 type AzimuthalGrid struct {
 	BeamWidth                  float64
 	Sidelobes                  float64
@@ -29,6 +30,7 @@ type AzimuthalGrid struct {
 	NeedShowDirectionalDiagram bool
 }
 
+//View of map object
 type View struct {
 	ColorOuter           string
 	ColorInner           string
@@ -38,7 +40,7 @@ type View struct {
 }
 
 // NewObject creates new MapObject with a parsed from WKT geometry
-func NewObject(id int, typeId int, wkt string, azimuthalGrid AzimuthalGrid, view View, code string) (*MapObject, error) {
+func NewObject(id int, typeId int, wkt string, code string, azimuthalGrid AzimuthalGrid, view View) (*MapObject, error) {
 	geo, err := wktparser.Parse(wkt)
 	if err != nil {
 		fmt.Println(err.Error())
