@@ -415,10 +415,15 @@ func drawHatchingOnLine(canvas *svg.SVG, beginX, beginY, endX, endY int, style s
 	length := 8
 	distance := distanceBeetweenPoints(beginX, beginY, endX, endY)
 	percentSizeSegment := float64(length) / distance
+
+	if percentSizeSegment >= 1 {
+		return
+	}
+
 	count := int(distance) / length
 
-	currentPointPercent := percentSizeSegment
-	for i := 0; i < count; i++ {
+	currentPointPercent := .0
+	for i := 0; i <= count; i++ {
 		x1, y1 := getPointOnLine(beginX, beginY, endX, endY, currentPointPercent)
 		currentPointPercent += percentSizeSegment
 		x2, y2 := getPointOnLine(beginX, beginY, endX, endY, currentPointPercent)
@@ -427,6 +432,11 @@ func drawHatchingOnLine(canvas *svg.SVG, beginX, beginY, endX, endY int, style s
 
 		canvas.Line(x1, y1, resultX, resultY, style)
 	}
+
+	//draw last hatch
+	x1, y1 := getPointOnLine(beginX, beginY, endX, endY, 1-percentSizeSegment)
+	resultX, resultY := rotatePoint(endX, endY, x1, y1, 90)
+	canvas.Line(endX, endY, resultX, resultY, style)
 }
 
 func RenderAttackMainDirection(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
@@ -755,9 +765,11 @@ func getPointOnLine(BeginX, BeginY, EndX, EndY int, percentSize float64) (pointX
 	return pointX, pointY
 }
 
-func rotatePoint(centerX, centerY, pointX, pointY, angel int) (x, y int) {
-	x = centerX + (int)((float64)(pointX-centerX)*math.Cos((float64)(angel)*math.Pi/180)) - (int)((float64)(pointY-centerY)*math.Sin((float64)(angel)/180*math.Pi))
-	y = centerY + (int)((float64)(pointX-centerX)*math.Sin((float64)(angel)*math.Pi/180)) + (int)((float64)(pointY-centerY)*math.Cos((float64)(angel)/180*math.Pi))
+func rotatePoint(centerX, centerY, pointX, pointY, angle int) (x, y int) {
+	radianAngle := (float64)(angle) * math.Pi / 180
+
+	x = centerX + (int)((float64)(pointX-centerX)*math.Cos(radianAngle)-(float64)(pointY-centerY)*math.Sin(radianAngle))
+	y = centerY + (int)((float64)(pointX-centerX)*math.Sin(radianAngle)+(float64)(pointY-centerY)*math.Cos(radianAngle))
 	return x, y
 }
 
