@@ -522,14 +522,20 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 
 	if object.Code != "1000000004" {
 		xs, ys := coordToXsYs(coords)
-		xs, ys = polylineToCurvePoints(xs, ys)
+		if object.View.UseCurveBezier {
+			xs, ys = polylineToCurvePoints(xs, ys)
+		}
+
 		x, y, angel := getCenterPolylineAndAngel(xs, ys)
 		renderImageOnLine(canvas, object.View.Scale, angel, x, y, object.ID, tile.Z)
 	}
 
 	if object.Label != "" {
 		xs, ys := coordToXsYs(coords)
-		xs, ys = polylineToCurvePoints(xs, ys)
+
+		if object.View.UseCurveBezier {
+			xs, ys = polylineToCurvePoints(xs, ys)
+		}
 		x, y, _ := getCenterPolylineAndAngel(xs, ys)
 		renderTextOnLine(canvas, x, y, object.Label, object.Position)
 	}
@@ -601,13 +607,24 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 	renderCurveOrPolyline(canvas, object.View.UseCurveBezier, style, coords)
 
 	if object.Code != "1000000002" {
-		curveXs, curveYs := polylineToCurvePoints(xs, ys)
-		x, y, angel := getCenterPolylineAndAngel(curveXs, curveYs)
-		renderImageOnLine(canvas, object.View.Scale, angel, x, y, object.ID, tile.Z)
+		if object.View.UseCurveBezier {
+			curveXs, curveYs := polylineToCurvePoints(xs, ys)
+			x, y, angle := getCenterPolylineAndAngel(curveXs, curveYs)
+			renderImageOnLine(canvas, object.View.Scale, angle, x, y, object.ID, tile.Z)
+		} else {
+			x, y, angle := getCenterPolylineAndAngel(xs, ys)
+			renderImageOnLine(canvas, object.View.Scale, angle, x, y, object.ID, tile.Z)
+		}
 	}
 
 	if object.Label != "" {
-		x, y, _ := getCenterPolylineAndAngel(xs, ys)
+		var x, y int
+		if object.View.UseCurveBezier {
+			x, y, _ = getCenterPolylineAndAngel(xs, ys)
+		} else {
+			curveXs, curveYs := polylineToCurvePoints(xs, ys)
+			x, y, _ = getCenterPolylineAndAngel(curveXs, curveYs)
+		}
 		renderTextOnLine(canvas, x, y, object.Label, object.Position)
 	}
 
