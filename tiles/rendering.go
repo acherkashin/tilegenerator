@@ -170,6 +170,13 @@ func distanceBeetweenPoints(x1, y1, x2, y2 int) float64 {
 	return float64(math.Sqrt(float64(a*a + b*b)))
 }
 
+func distanceBeetweenPointsFloat(x1, y1, x2, y2 float64) float64 {
+	a := x1 - x2
+	b := y1 - y2
+
+	return float64(math.Sqrt(float64(a*a + b*b)))
+}
+
 func getLineCenter(x1, y1, x2, y2 int) (x, y int) {
 	x = (x2 + x1) / 2
 	y = (y2 + y1) / 2
@@ -338,6 +345,7 @@ func renderLeftPartNewObject(canvas *svg.SVG, x1, y1, x2, y2 int, colorInner, co
 }
 
 func RenderPit(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
+	canvas.Gid(fmt.Sprintf("id%v", strconv.Itoa(object.ID)))
 	line, err := object.Geometry.AsLineString()
 	if err != nil {
 		return err
@@ -351,7 +359,7 @@ func RenderPit(canvas *svg.SVG, object *entities.MapObject, tile *Tile) error {
 	} else {
 		renderPolygonWithHatching(canvas, line.Coordinates, style)
 	}
-
+	canvas.Gend()
 	return nil
 }
 
@@ -362,14 +370,14 @@ func renderCurveBezierWithHatching(canvas *svg.SVG, coords []geometry.Coord, sty
 
 	if len(xs) >= 3 {
 		for i := 0; i <= len(xs)-3; i++ {
-			beginArcX, beginArcY := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
-			endArcX, endArcY := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
+			beginArcX, beginArcY := utils.GetPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
+			endArcX, endArcY := utils.GetPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
 
 			if i == 0 {
 				//render first line
 				drawHatchingOnLine(canvas, xs[i], ys[i], beginArcX, beginArcY, style)
 			} else {
-				x, y := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], percentLength)
+				x, y := utils.GetPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], percentLength)
 				drawHatchingOnLine(canvas, x, y, beginArcX, beginArcY, style)
 			}
 
@@ -379,7 +387,7 @@ func renderCurveBezierWithHatching(canvas *svg.SVG, coords []geometry.Coord, sty
 				//render last line
 				drawHatchingOnLine(canvas, endArcX, endArcY, xs[i+2], ys[i+2], style)
 			} else {
-				x, y := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], 1-percentLength)
+				x, y := utils.GetPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], 1-percentLength)
 				drawHatchingOnLine(canvas, endArcX, endArcY, x, y, style)
 			}
 		}
@@ -398,16 +406,32 @@ func renderPolygonWithHatching(canvas *svg.SVG, coords []geometry.Coord, style s
 
 func renderHatchingOnBezier(canvas *svg.SVG, beginX, beginY, controlX, controlY, endX, endY int, style string) {
 	bezierXs, bezierYs := bezierToPolyline(beginX, beginY, controlX, controlY, endX, endY, 0.1)
-	percentSizeSegment := 8.0 / getLengthPolyline(bezierXs, bezierYs)
+	lengthHatch := 8.0
+	percentSizeSegment := lengthHatch / getLengthPolyline(bezierXs, bezierYs)
 	if percentSizeSegment > 1 {
 		percentSizeSegment = 1
 	}
 
 	for j := 0.; j < 1; j += percentSizeSegment {
 		beginHatchX, beginHatchY := getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j)
-		nextX, nextY := getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j+percentSizeSegment)
-		endHatchX, endHatchY := rotatePoint(int(beginHatchX), int(beginHatchY), int(nextX), int(nextY), -90)
+
+		nextX, nextY := getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j+percentSizeSegment/5000)
+		distance := distanceBeetweenPointsFloat(beginHatchX, beginHatchY, nextX, nextY)
+		nextX, nextY = utils.GetPointOnLineFloat(beginHatchX, beginHatchY, nextX, nextY, lengthHatch/distance)
+		endHatchX, endHatchY := utils.RotatePoint(int(beginHatchX), int(beginHatchY), int(nextX), int(nextY), -90)
+
+		//sometimes endHatchX and endHatchY are infinity
+		if math.Abs(float64(endHatchX)) > 9223372036 || math.Abs(float64(endHatchY)) > 9223372036 {
+			continue
+		}
 		canvas.Line(int(beginHatchX), int(beginHatchY), int(endHatchX), int(endHatchY), style)
+
+		nextX, nextY = getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j+percentSizeSegment)
+
+		//if distance between current and next point less than lengthHatch/2 then skip next point
+		if distanceBeetweenPoints(int(beginHatchX), int(beginHatchY), int(nextX), int(nextY)) < lengthHatch/2 {
+			j += percentSizeSegment
+		}
 	}
 
 }
@@ -417,25 +441,24 @@ func drawHatchingOnLine(canvas *svg.SVG, beginX, beginY, endX, endY int, style s
 	percentSizeSegment := float64(length) / distance
 
 	if percentSizeSegment >= 1 {
-		return
+		percentSizeSegment = 1
 	}
 
 	count := int(distance) / length
 
 	currentPointPercent := .0
 	for i := 0; i <= count; i++ {
-		x1, y1 := getPointOnLine(beginX, beginY, endX, endY, currentPointPercent)
+		x1, y1 := utils.GetPointOnLine(beginX, beginY, endX, endY, currentPointPercent)
 		currentPointPercent += percentSizeSegment
-		x2, y2 := getPointOnLine(beginX, beginY, endX, endY, currentPointPercent)
+		x2, y2 := utils.GetPointOnLine(beginX, beginY, endX, endY, currentPointPercent)
 
-		resultX, resultY := rotatePoint(x1, y1, x2, y2, -90)
-
+		resultX, resultY := utils.RotatePoint(x1, y1, x2, y2, -90)
 		canvas.Line(x1, y1, resultX, resultY, style)
 	}
 
 	//draw last hatch
-	x1, y1 := getPointOnLine(beginX, beginY, endX, endY, 1-percentSizeSegment)
-	resultX, resultY := rotatePoint(endX, endY, x1, y1, 90)
+	x1, y1 := utils.GetPointOnLine(beginX, beginY, endX, endY, 1-percentSizeSegment)
+	resultX, resultY := utils.RotatePoint(endX, endY, x1, y1, 90)
 	canvas.Line(endX, endY, resultX, resultY, style)
 }
 
@@ -565,7 +588,7 @@ func getCenterPolylineAndAngel(xs, ys []int) (x, y int, angel float64) {
 
 	percentPosition := 1 - (-1.0)*halfLength/lineLength
 
-	centerX, centerY := getPointOnLine(xs[i-1], ys[i-1], xs[i], ys[i], percentPosition)
+	centerX, centerY := utils.GetPointOnLine(xs[i-1], ys[i-1], xs[i], ys[i], percentPosition)
 
 	angel = getAngel(xs[i-1], ys[i-1], xs[i], ys[i])
 
@@ -763,31 +786,15 @@ func getArrowRouteAviationFlight(BeginX, BeginY, EndX, EndY, zoom int) ([]int, [
 	distance := distanceBeetweenPoints(BeginX, BeginY, EndX, EndY)
 	percentSize := 1 - 5.0/distance
 	angel = 120
-	centerX, centerY := getPointOnLine(BeginX, BeginY, EndX, EndY, percentSize)
+	centerX, centerY := utils.GetPointOnLine(BeginX, BeginY, EndX, EndY, percentSize)
 	rotatedPointX, rotatedPointY := EndX, EndY
 
-	p1X, p1Y := rotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, angel)
-	p2X, p2Y := rotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, -angel)
+	p1X, p1Y := utils.RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, angel)
+	p2X, p2Y := utils.RotatePoint(centerX, centerY, rotatedPointX, rotatedPointY, -angel)
 
 	xs := []int{p1X, rotatedPointX, p2X}
 	ys := []int{p1Y, rotatedPointY, p2Y}
 	return xs, ys
-}
-
-//equation of the line is defined by two points
-func getPointOnLine(BeginX, BeginY, EndX, EndY int, percentSize float64) (pointX, pointY int) {
-	pointX = BeginX + (int)((float64)(EndX-BeginX)*percentSize)
-	pointY = BeginY + (int)((float64)(EndY-BeginY)*percentSize)
-
-	return pointX, pointY
-}
-
-func rotatePoint(centerX, centerY, pointX, pointY, angle int) (x, y int) {
-	radianAngle := (float64)(angle) * math.Pi / 180
-
-	x = centerX + (int)((float64)(pointX-centerX)*math.Cos(radianAngle)-(float64)(pointY-centerY)*math.Sin(radianAngle))
-	y = centerY + (int)((float64)(pointX-centerX)*math.Sin(radianAngle)+(float64)(pointY-centerY)*math.Cos(radianAngle))
-	return x, y
 }
 
 /*
@@ -898,13 +905,13 @@ func renderCurve(canvas *svg.SVG, coords []geometry.Coord, style string) {
 
 	if len(xs) >= 3 {
 		for i := 0; i <= len(xs)-3; i++ {
-			endArcX, endArcY := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
-			beginArcX, beginArcY := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
+			endArcX, endArcY := utils.GetPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
+			beginArcX, beginArcY := utils.GetPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
 
 			if i == 0 {
 				canvas.Line(xs[i], ys[i], beginArcX, beginArcY, style)
 			} else {
-				x, y := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], percentLength)
+				x, y := utils.GetPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], percentLength)
 				canvas.Line(x, y, beginArcX, beginArcY, style)
 			}
 
@@ -913,7 +920,7 @@ func renderCurve(canvas *svg.SVG, coords []geometry.Coord, style string) {
 			if i == len(xs)-3 {
 				canvas.Line(endArcX, endArcY, xs[i+2], ys[i+2], style)
 			} else {
-				x, y := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], 1-percentLength)
+				x, y := utils.GetPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], 1-percentLength)
 				canvas.Line(endArcX, endArcY, x, y, style)
 			}
 		}
@@ -970,8 +977,8 @@ func polylineToCurvePoints(xs, ys []int) ([]int, []int) {
 	curveYs := []int{ys[0]}
 
 	for i := 0; i < count-2; i++ {
-		beginArcX, beginArcY := getPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
-		endArcX, endArcY := getPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
+		beginArcX, beginArcY := utils.GetPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
+		endArcX, endArcY := utils.GetPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
 
 		bezierXs, bezierYs := bezierToPolyline(beginArcX, beginArcY, xs[i+1], ys[i+1], endArcX, endArcY, 0.1)
 
