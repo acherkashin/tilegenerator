@@ -109,17 +109,17 @@ func newBigArrow(tile *Tile, coords []geometry.Coord) *bigArrow {
 	x1, y1 := int(coords[0].X), int(coords[0].Y)
 	x2, y2 := int(coords[1].X), int(coords[1].Y)
 
-	centerX, centerY := getLineCenter(x1, y1, x2, y2)
-	distance := distanceBeetweenPoints(x1, y1, x2, y2)
+	centerX, centerY := utils.LineCenter(coords[0].X, coords[0].Y, coords[1].X, coords[1].Y)
+	distance := utils.DistanceBetweenPoints(coords[0].X, coords[0].Y, coords[1].X, coords[1].Y)
 	sizeEdgeArrow := int(distance / 10)
 
-	line1X1, line1Y1 := centerX+int(distance/2), centerY+sizeEdgeArrow/2/3
-	line1X2, line1Y2 := centerX-int(distance/2), centerY+sizeEdgeArrow/2
+	line1X1, line1Y1 := int(centerX)+int(distance/2), int(centerY)+sizeEdgeArrow/2/3
+	line1X2, line1Y2 := int(centerX)-int(distance/2), int(centerY)+sizeEdgeArrow/2
 
-	line2X1, line2Y1 := centerX+int(distance/2), centerY-sizeEdgeArrow/2/3
-	line2X2, line2Y2 := centerX-int(distance/2), centerY-sizeEdgeArrow/2
+	line2X1, line2Y1 := int(centerX)+int(distance/2), int(centerY)-sizeEdgeArrow/2/3
+	line2X2, line2Y2 := int(centerX)-int(distance/2), int(centerY)-sizeEdgeArrow/2
 
-	rightLinePointX, rightLinePointY := centerX+int(distance/2), centerY
+	rightLinePointX, rightLinePointY := int(centerX)+int(distance/2), int(centerY)
 
 	arrowXs := []int{rightLinePointX, rightLinePointX + int(math.Sqrt(3)/2.0*float64(sizeEdgeArrow)), rightLinePointX}
 	arrowYs := []int{rightLinePointY + sizeEdgeArrow/2, rightLinePointY, rightLinePointY - sizeEdgeArrow/2}
@@ -128,8 +128,8 @@ func newBigArrow(tile *Tile, coords []geometry.Coord) *bigArrow {
 	pointYs := []int{line1Y2, line1Y1, arrowYs[0], arrowYs[1], arrowYs[2], line2Y1, line2Y2}
 
 	return &bigArrow{
-		centerX:     centerX,
-		centerY:     centerY,
+		centerX:     int(centerX),
+		centerY:     int(centerY),
 		pointXs:     pointXs,
 		pointYs:     pointYs,
 		arrowXs:     arrowXs,
@@ -163,29 +163,8 @@ func getBeamDiagramPoints(centerX, centerY, beamWidth int, sidelobes, radius flo
 	return xs, ys
 }
 
-func distanceBeetweenPoints(x1, y1, x2, y2 int) float64 {
-	a := x1 - x2
-	b := y1 - y2
-
-	return float64(math.Sqrt(float64(a*a + b*b)))
-}
-
-func distanceBeetweenPointsFloat(x1, y1, x2, y2 float64) float64 {
-	a := x1 - x2
-	b := y1 - y2
-
-	return float64(math.Sqrt(float64(a*a + b*b)))
-}
-
-func getLineCenter(x1, y1, x2, y2 int) (x, y int) {
-	x = (x2 + x1) / 2
-	y = (y2 + y1) / 2
-
-	return x, y
-}
-
 func getAngel(x1, y1, x2, y2 int) float64 {
-	r := distanceBeetweenPoints(x1, y1, x2, y2)
+	r := utils.DistanceBetweenPoints(float64(x1), float64(y1), float64(x2), float64(y2))
 	angel := math.Acos((float64(x1)-float64(x2))/r) * 180.0 / math.Pi
 
 	if ((angel < 0) && (y1 > y2)) || ((angel > 0) && (y1 < y2)) {
@@ -305,9 +284,9 @@ func RenderNewObject(canvas *svg.SVG, object *entities.MapObject, tile *Tile) er
 func renderRightPartNewObject(canvas *svg.SVG, x1, y1, x2, y2 int, colorInner, colorOuter string) {
 	radiusX := 10
 	radiusY := radiusX / 2
-	centerX, centerY := getLineCenter(x1, y1, x2, y2)
-	distance := distanceBeetweenPoints(x1, y1, x2, y2)
-	rightLinePointX, rightLinePointY := centerX+int(distance/2), centerY
+	centerX, centerY := utils.LineCenter(float64(x1), float64(y1), float64(x2), float64(y2))
+	distance := utils.DistanceBetweenPoints(float64(x1), float64(y1), float64(x2), float64(y2))
+	rightLinePointX, rightLinePointY := int(centerX+distance/2), int(centerY)
 
 	canvas.Gtransform(fmt.Sprintf("rotate(%v,%v,%v)", getAngel(x1, y1, x2, y2), centerX, centerY))
 
@@ -326,9 +305,9 @@ func renderRightPartNewObject(canvas *svg.SVG, x1, y1, x2, y2 int, colorInner, c
 func renderLeftPartNewObject(canvas *svg.SVG, x1, y1, x2, y2 int, colorInner, colorOuter string) {
 	radiusX := 10
 	radiusY := radiusX / 2
-	centerX, centerY := getLineCenter(x1, y1, x2, y2)
-	distance := distanceBeetweenPoints(x1, y1, x2, y2)
-	leftLinePointX, leftLinePointY := centerX-int(distance/2), centerY
+	centerX, centerY := utils.LineCenter(float64(x1), float64(y1), float64(x2), float64(y2))
+	distance := utils.DistanceBetweenPoints(float64(x1), float64(y1), float64(x2), float64(y2))
+	leftLinePointX, leftLinePointY := int(centerX-distance/2), int(centerY)
 
 	canvas.Gtransform(fmt.Sprintf("rotate(%v,%v,%v)", getAngel(x1, y1, x2, y2), centerX, centerY))
 
@@ -407,7 +386,7 @@ func renderPolygonWithHatching(canvas *svg.SVG, coords []geometry.Coord, style s
 func renderHatchingOnBezier(canvas *svg.SVG, beginX, beginY, controlX, controlY, endX, endY int, style string) {
 	bezierXs, bezierYs := bezierToPolyline(beginX, beginY, controlX, controlY, endX, endY, 0.1)
 	lengthHatch := 8.0
-	percentSizeSegment := lengthHatch / getLengthPolyline(bezierXs, bezierYs)
+	percentSizeSegment := lengthHatch / utils.LengthPolyline(utils.IntArrayToFloat64(bezierXs), utils.IntArrayToFloat64(bezierYs))
 	if percentSizeSegment > 1 {
 		percentSizeSegment = 1
 	}
@@ -416,7 +395,7 @@ func renderHatchingOnBezier(canvas *svg.SVG, beginX, beginY, controlX, controlY,
 		beginHatchX, beginHatchY := getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j)
 
 		nextX, nextY := getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j+percentSizeSegment/5000)
-		distance := distanceBeetweenPointsFloat(beginHatchX, beginHatchY, nextX, nextY)
+		distance := utils.DistanceBetweenPoints(beginHatchX, beginHatchY, nextX, nextY)
 		nextX, nextY = utils.GetPointOnLineFloat(beginHatchX, beginHatchY, nextX, nextY, lengthHatch/distance)
 		endHatchX, endHatchY := utils.RotatePoint(int(beginHatchX), int(beginHatchY), int(nextX), int(nextY), -90)
 
@@ -429,7 +408,7 @@ func renderHatchingOnBezier(canvas *svg.SVG, beginX, beginY, controlX, controlY,
 		nextX, nextY = getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j+percentSizeSegment)
 
 		//if distance between current and next point less than lengthHatch/2 then skip next point
-		if distanceBeetweenPoints(int(beginHatchX), int(beginHatchY), int(nextX), int(nextY)) < lengthHatch/2 {
+		if utils.DistanceBetweenPoints(beginHatchX, beginHatchY, nextX, nextY) < lengthHatch/2 {
 			j += percentSizeSegment
 		}
 	}
@@ -437,7 +416,7 @@ func renderHatchingOnBezier(canvas *svg.SVG, beginX, beginY, controlX, controlY,
 }
 func drawHatchingOnLine(canvas *svg.SVG, beginX, beginY, endX, endY int, style string) {
 	length := 8
-	distance := distanceBeetweenPoints(beginX, beginY, endX, endY)
+	distance := utils.DistanceBetweenPoints(float64(beginX), float64(beginY), float64(endX), float64(endY))
 	percentSizeSegment := float64(length) / distance
 
 	if percentSizeSegment >= 1 {
@@ -579,10 +558,10 @@ func renderPolyline(canvas *svg.SVG, coords []geometry.Coord, style string) {
 func getCenterPolylineAndAngel(xs, ys []int) (x, y int, angel float64) {
 	var lineLength float64
 	var i int
-	halfLength := getLengthPolyline(xs, ys) / 2
+	halfLength := utils.LengthPolyline(utils.IntArrayToFloat64(xs), utils.IntArrayToFloat64(ys)) / 2
 
 	for i = 0; i < len(xs) && halfLength > 0; i++ {
-		lineLength = distanceBeetweenPoints(xs[i], ys[i], xs[i+1], ys[i+1])
+		lineLength = utils.DistanceBetweenPoints(float64(xs[i]), float64(ys[i]), float64(xs[i+1]), float64(ys[i+1]))
 		halfLength -= lineLength
 	}
 
@@ -599,7 +578,7 @@ func renderArrowRouteAviationFlight(coords []geometry.Coord, canvas *svg.SVG, ob
 	lengthArrow := 5.0
 	weight := 1
 	i := len(coords) - 2
-	lastLineLength := distanceBeetweenPoints(int(coords[i].X), int(coords[i].Y), int(coords[i+1].X), int(coords[i+1].Y))
+	lastLineLength := utils.DistanceBetweenPoints(coords[i].X, coords[i].Y, coords[i+1].X, coords[i+1].Y)
 
 	styleArrow := fmt.Sprintf("stroke:%v; stroke-width: %v; fill: %v;", object.View.ColorInner, weight, object.View.ColorInner)
 
@@ -661,11 +640,11 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 
 //At first, we display arc and arrow horizontally and then rotate to needed angle
 func renderRightPartPatrollingArea(canvas *svg.SVG, x1, y1, x2, y2 int, colorInner, colorOuter string) {
-	radiusX := int(distanceBeetweenPoints(x1, y1, x2, y2) / 4)
+	radiusX := int(utils.DistanceBetweenPoints(float64(x1), float64(y1), float64(x2), float64(y2)) / 4)
 	radiusY := int(radiusX / 2)
-	centerX, centerY := getLineCenter(x1, y1, x2, y2)
-	distance := distanceBeetweenPoints(x1, y1, x2, y2)
-	rightLinePointX, rightLinePointY := centerX+int(distance/2), centerY
+	centerX, centerY := utils.LineCenter(float64(x1), float64(y1), float64(x2), float64(y2))
+	distance := utils.DistanceBetweenPoints(float64(x1), float64(y1), float64(x2), float64(y2))
+	rightLinePointX, rightLinePointY := int(centerX+distance/2), int(centerY)
 	rightArrowXs, rightArrowYs := getRightArrowPoints(rightLinePointX, rightLinePointY, int(distance))
 
 	canvas.Gtransform(fmt.Sprintf("rotate(%v,%v,%v)", getAngel(x1, y1, x2, y2), centerX, centerY))
@@ -687,11 +666,11 @@ func renderRightPartPatrollingArea(canvas *svg.SVG, x1, y1, x2, y2 int, colorInn
 
 //At first, we display arc and arrow horizontally and then rotate to needed angle
 func renderLeftPartPatrollingArea(canvas *svg.SVG, x1, y1, x2, y2 int, colorInner, colorOuter string) {
-	radiusX := int(distanceBeetweenPoints(x1, y1, x2, y2) / 4)
+	radiusX := int(utils.DistanceBetweenPoints(float64(x1), float64(y1), float64(x2), float64(y2)) / 4)
 	radiusY := int(radiusX / 2)
-	centerX, centerY := getLineCenter(x1, y1, x2, y2)
-	distance := distanceBeetweenPoints(x1, y1, x2, y2)
-	leftLinePointX, leftLinePointY := centerX-int(distance/2), centerY
+	centerX, centerY := utils.LineCenter(float64(x1), float64(y1), float64(x2), float64(y2))
+	distance := utils.DistanceBetweenPoints(float64(x1), float64(y1), float64(x2), float64(y2))
+	leftLinePointX, leftLinePointY := int(centerX-distance/2), int(centerY)
 	leftArrowXs, leftArrowYs := getLeftArrowPoints(leftLinePointX, leftLinePointY, int(distance))
 
 	canvas.Gtransform(fmt.Sprintf("rotate(%v,%v,%v)", getAngel(x1, y1, x2, y2), centerX, centerY))
@@ -771,19 +750,9 @@ func renderTextOnLine(svg *svg.SVG, x, y int, label, position string) {
 	svg.Text(int(x+xShift), int(y+yShift), label)
 }
 
-func getLengthPolyline(xs, ys []int) float64 {
-	sum := 0.0
-
-	for i := 0; i < len(xs)-1; i++ {
-		sum += distanceBeetweenPoints(xs[i], ys[i], xs[i+1], ys[i+1])
-	}
-
-	return sum
-}
-
 func getArrowRouteAviationFlight(BeginX, BeginY, EndX, EndY, zoom int) ([]int, []int) {
 	var angel int
-	distance := distanceBeetweenPoints(BeginX, BeginY, EndX, EndY)
+	distance := utils.DistanceBetweenPoints(float64(BeginX), float64(BeginY), float64(EndX), float64(EndY))
 	percentSize := 1 - 5.0/distance
 	angel = 120
 	centerX, centerY := utils.GetPointOnLine(BeginX, BeginY, EndX, EndY, percentSize)
