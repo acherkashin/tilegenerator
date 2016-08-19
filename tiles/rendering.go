@@ -384,7 +384,7 @@ func renderPolygonWithHatching(canvas *svg.SVG, coords []geometry.Coord, style s
 }
 
 func renderHatchingOnBezier(canvas *svg.SVG, beginX, beginY, controlX, controlY, endX, endY int, style string) {
-	bezierXs, bezierYs := bezierToPolyline(beginX, beginY, controlX, controlY, endX, endY, 0.1)
+	bezierXs, bezierYs := utils.BezierToPolyline(beginX, beginY, controlX, controlY, endX, endY, 0.1)
 	lengthHatch := 8.0
 	percentSizeSegment := lengthHatch / utils.LengthPolyline(utils.IntArrayToFloat64(bezierXs), utils.IntArrayToFloat64(bezierYs))
 	if percentSizeSegment > 1 {
@@ -392,9 +392,9 @@ func renderHatchingOnBezier(canvas *svg.SVG, beginX, beginY, controlX, controlY,
 	}
 
 	for j := 0.; j < 1; j += percentSizeSegment {
-		beginHatchX, beginHatchY := getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j)
+		beginHatchX, beginHatchY := utils.PointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j)
 
-		nextX, nextY := getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j+percentSizeSegment/5000)
+		nextX, nextY := utils.PointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j+percentSizeSegment/5000)
 		distance := utils.DistanceBetweenPoints(beginHatchX, beginHatchY, nextX, nextY)
 		nextX, nextY = utils.GetPointOnLineFloat(beginHatchX, beginHatchY, nextX, nextY, lengthHatch/distance)
 		endHatchX, endHatchY := utils.RotatePoint(int(beginHatchX), int(beginHatchY), int(nextX), int(nextY), -90)
@@ -405,7 +405,7 @@ func renderHatchingOnBezier(canvas *svg.SVG, beginX, beginY, controlX, controlY,
 		}
 		canvas.Line(int(beginHatchX), int(beginHatchY), int(endHatchX), int(endHatchY), style)
 
-		nextX, nextY = getPointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j+percentSizeSegment)
+		nextX, nextY = utils.PointBezier(float64(beginX), float64(beginY), float64(controlX), float64(controlY), float64(endX), float64(endY), j+percentSizeSegment)
 
 		//if distance between current and next point less than lengthHatch/2 then skip next point
 		if utils.DistanceBetweenPoints(beginHatchX, beginHatchY, nextX, nextY) < lengthHatch/2 {
@@ -525,7 +525,7 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 	if object.Code != "1000000004" {
 		xs, ys := coordToXsYs(coords)
 		if object.View.UseCurveBezier {
-			xs, ys = polylineToCurvePoints(xs, ys)
+			xs, ys = utils.PolylineToCurvePoints(xs, ys)
 		}
 
 		x, y, angel := getCenterPolylineAndAngel(xs, ys)
@@ -536,7 +536,7 @@ func RenderRouteAviationFlight(canvas *svg.SVG, object *entities.MapObject, tile
 		xs, ys := coordToXsYs(coords)
 
 		if object.View.UseCurveBezier {
-			xs, ys = polylineToCurvePoints(xs, ys)
+			xs, ys = utils.PolylineToCurvePoints(xs, ys)
 		}
 		x, y, _ := getCenterPolylineAndAngel(xs, ys)
 		renderTextOnLine(canvas, x, y, object.Label, object.Position)
@@ -610,7 +610,7 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 
 	if object.Code != "1000000002" {
 		if object.View.UseCurveBezier {
-			curveXs, curveYs := polylineToCurvePoints(xs, ys)
+			curveXs, curveYs := utils.PolylineToCurvePoints(xs, ys)
 			x, y, angle := getCenterPolylineAndAngel(curveXs, curveYs)
 			renderImageOnLine(canvas, object.View.Scale, angle, x, y, object.ID, tile.Z)
 		} else {
@@ -624,7 +624,7 @@ func RenderPatrollingArea(canvas *svg.SVG, object *entities.MapObject, tile *Til
 		if object.View.UseCurveBezier {
 			x, y, _ = getCenterPolylineAndAngel(xs, ys)
 		} else {
-			curveXs, curveYs := polylineToCurvePoints(xs, ys)
+			curveXs, curveYs := utils.PolylineToCurvePoints(xs, ys)
 			x, y, _ = getCenterPolylineAndAngel(curveXs, curveYs)
 		}
 		renderTextOnLine(canvas, x, y, object.Label, object.Position)
@@ -907,65 +907,6 @@ func coordToXsYs(coords []geometry.Coord) ([]int, []int) {
 	}
 
 	return xs, ys
-}
-
-func getPointBezier(bx1, by1, cx2, cy2, ex3, ey3, t float64) (float64, float64) {
-	x := equationBezier(bx1, cx2, ex3, t)
-	y := equationBezier(by1, cy2, ey3, t)
-
-	return x, y
-}
-
-func equationBezier(px1, px2, px3, t float64) float64 {
-	value := math.Pow(1-t, 2)*px1 + 2*t*(1-t)*px2 + math.Pow(t, 2)*px3
-
-	return value
-}
-
-//step must be more 0 and less 1
-//get points of bezier curve by three points
-func bezierToPolyline(bx1, by1, cx2, cy2, ex3, ey3 int, step float64) ([]int, []int) {
-	var xs []int
-	var ys []int
-
-	for i := .0; i <= 1; i += step {
-		x, y := getPointBezier(float64(bx1), float64(by1), float64(cx2), float64(cy2), float64(ex3), float64(ey3), i)
-		xs = append(xs, int(x))
-		ys = append(ys, int(y))
-	}
-
-	return xs, ys
-}
-
-//convert points of polyline to points of curve bezier
-func polylineToCurvePoints(xs, ys []int) ([]int, []int) {
-	count := len(xs)
-	percentLength := 0.5
-
-	curveXs := []int{xs[0]}
-	curveYs := []int{ys[0]}
-
-	for i := 0; i < count-2; i++ {
-		beginArcX, beginArcY := utils.GetPointOnLine(xs[i], ys[i], xs[i+1], ys[i+1], 1-percentLength)
-		endArcX, endArcY := utils.GetPointOnLine(xs[i+1], ys[i+1], xs[i+2], ys[i+2], percentLength)
-
-		bezierXs, bezierYs := bezierToPolyline(beginArcX, beginArcY, xs[i+1], ys[i+1], endArcX, endArcY, 0.1)
-
-		curveXs = concat(curveXs, bezierXs)
-		curveYs = concat(curveYs, bezierYs)
-	}
-
-	curveXs = append(curveXs, xs[count-1])
-	curveYs = append(curveYs, ys[count-1])
-
-	return curveXs, curveYs
-}
-
-func concat(array1, array2 []int) []int {
-	newslice := make([]int, len(array1)+len(array2))
-	copy(newslice, array1)
-	copy(newslice[len(array1):], array2)
-	return newslice
 }
 
 func renderCurveOrPolyline(canvas *svg.SVG, isRenderCurve bool, style string, coord []geometry.Coord) {

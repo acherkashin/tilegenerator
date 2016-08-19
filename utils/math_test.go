@@ -3,7 +3,6 @@ package utils
 import (
 	"testing"
 
-	"github.com/TerraFactory/tilegenerator/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +17,7 @@ func TestDistanceBetweenPoints(t *testing.T) {
 	}
 
 	for _, item := range distTest {
-		distance := utils.DistanceBetweenPoints(item.x1, item.y1, item.x2, item.y2)
+		distance := DistanceBetweenPoints(item.x1, item.y1, item.x2, item.y2)
 		assert.Equal(t, item.expected, distance)
 	}
 }
@@ -35,7 +34,7 @@ func TestLengthPolyline(t *testing.T) {
 	}
 
 	for _, item := range lenghtTest {
-		length := utils.LengthPolyline(item.xs, item.ys)
+		length := LengthPolyline(item.xs, item.ys)
 		assert.Equal(t, item.expected, length)
 	}
 }
@@ -51,7 +50,7 @@ func TestLineCenter(t *testing.T) {
 	}
 
 	for _, item := range centerTest {
-		centerX, centerY := utils.LineCenter(item.x1, item.y1, item.x2, item.y2)
+		centerX, centerY := LineCenter(item.x1, item.y1, item.x2, item.y2)
 		assert.Equal(t, item.expectedX, centerX)
 		assert.Equal(t, item.expectedY, centerY)
 	}
