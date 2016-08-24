@@ -9,15 +9,16 @@ import (
 
 // MapObject represents a geometry on a map
 type MapObject struct {
-	ID            int
-	StyleName     string
-	TypeID        int
-	Label         string
-	Code          string
-	Position      string
-	AzimuthalGrid AzimuthalGrid
-	View          View
-	Geometry      geometry.Geometry
+	ID             int
+	StyleName      string
+	TypeID         int
+	Label          string
+	Code           string
+	MarkerPosition string
+	Position       string
+	AzimuthalGrid  AzimuthalGrid
+	View           View
+	Geometry       geometry.Geometry
 }
 
 //AzimuthalGrid - information about azimuthalGrid for  map object

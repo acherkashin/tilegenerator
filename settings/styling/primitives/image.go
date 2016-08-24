@@ -13,6 +13,18 @@ import (
 	"github.com/TerraFactory/tilegenerator/utils"
 )
 
+const (
+	left      = "LEFT"
+	leftTop   = "LEFTTOP"
+	top       = "TOP"
+	rightTop  = "RIGHTTOP"
+	right     = "RIGHT"
+	rightDown = "RIGHTDOWN"
+	down      = "DOWN"
+	leftDown  = "LEFTDOWN"
+	center    = "CENTER"
+)
+
 type ImagePrimitive struct {
 	Width  int64
 	Height int64
@@ -46,9 +58,14 @@ func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 		}
 
 		svg.Gid(fmt.Sprintf("id%v", strconv.Itoa(object.ID)))
-		svg.Image(-int(img.Width)/2, -int(img.Height)/2, int(img.Width), int(img.Height), "data:"+img.Format+";base64,"+inlineBase64Img)
+
+		shiftX := getHorizontalShift(img, object.MarkerPosition)
+		shiftY := getVerticalShift(img, object.MarkerPosition)
+
+		svg.Image(int(shiftX), int(shiftY), int(img.Width), int(img.Height), "data:"+img.Format+";base64,"+inlineBase64Img)
 		svg.Gend()
 		svg.Gend()
+		svg.Circle(int(point.Coordinates.X), int(point.Coordinates.Y), int(6), "fill:red;stroke:red")
 	} else {
 		fmt.Printf("Can't render %s because of err: '%s'", resultHref, err.Error())
 	}
@@ -72,6 +89,36 @@ func NewImagePrimitive(params *map[string]interface{}) (ImagePrimitive, error) {
 	}
 
 	return img, nil
+}
+
+func getHorizontalShift(img ImagePrimitive, position string) (shift int64) {
+	switch strings.ToUpper(position) {
+	case leftDown, left, leftTop:
+		shift = -img.Width
+	case rightDown, right, rightTop:
+		shift = 0
+	case down, top:
+		shift = -img.Width / 2
+	default:
+		shift = -img.Width / 2
+	}
+
+	return shift
+}
+
+func getVerticalShift(img ImagePrimitive, position string) (shift int64) {
+	switch strings.ToUpper(position) {
+	case leftTop, top, rightTop:
+		shift = -img.Height
+	case leftDown, down, rightDown:
+		shift = 0
+	case left, right:
+		shift = -img.Height / 2
+	default:
+		shift = -img.Height / 2
+	}
+
+	return shift
 }
 
 func floatToString(inputNum float64) string {
