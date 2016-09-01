@@ -7,6 +7,19 @@ import (
 	"github.com/TerraFactory/wktparser/geometry"
 )
 
+//define markerPosition constans
+const (
+	LeftUp = 1 + iota
+	Up
+	RightUp
+	Left
+	Center
+	Right
+	LeftDown
+	Down
+	RightDown
+)
+
 // MapObject represents a geometry on a map
 type MapObject struct {
 	ID             int
@@ -14,7 +27,7 @@ type MapObject struct {
 	TypeID         int
 	Label          string
 	Code           string
-	MarkerPosition string
+	MarkerPosition int
 	Position       string
 	AzimuthalGrid  AzimuthalGrid
 	View           View
@@ -42,20 +55,24 @@ type View struct {
 }
 
 // NewObject creates new MapObject with a parsed from WKT geometry
-func NewObject(id int, typeId int, wkt string, code string, azimuthalGrid AzimuthalGrid, view View) (*MapObject, error) {
+func NewObject(id int, typeId, markerPosition int, wkt string, code string, azimuthalGrid AzimuthalGrid, view View) (*MapObject, error) {
 	geo, err := wktparser.Parse(wkt)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil, err
 	}
+	if !isValidMarkerPosition(markerPosition) {
+		markerPosition = Center
+	}
 
 	return &MapObject{
-		ID:            id,
-		TypeID:        typeId,
-		Geometry:      geo,
-		AzimuthalGrid: azimuthalGrid,
-		View:          view,
-		Code:          code}, nil
+		ID:             id,
+		TypeID:         typeId,
+		Geometry:       geo,
+		AzimuthalGrid:  azimuthalGrid,
+		MarkerPosition: markerPosition,
+		View:           view,
+		Code:           code}, nil
 }
 
 //NewView creates new view for map object
@@ -81,4 +98,8 @@ func NewAzimuthalGrid(beamWidth, sidelobes, azimut float64,
 		IsAntenna:                  isShortwaveAntenna,
 		NeedShowAzimuthalGrid:      needShowAzimuthalGrid,
 		NeedShowDirectionalDiagram: needShowDirectionalDiagram}
+}
+
+func isValidMarkerPosition(position int) bool {
+	return position > 0 && position < 10
 }

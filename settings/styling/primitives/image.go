@@ -13,18 +13,6 @@ import (
 	"github.com/TerraFactory/tilegenerator/utils"
 )
 
-const (
-	left      = "LEFT"
-	leftTop   = "LEFTTOP"
-	top       = "TOP"
-	rightTop  = "RIGHTTOP"
-	right     = "RIGHT"
-	rightDown = "RIGHTDOWN"
-	down      = "DOWN"
-	leftDown  = "LEFTDOWN"
-	center    = "CENTER"
-)
-
 type ImagePrimitive struct {
 	Width  int64
 	Height int64
@@ -37,15 +25,9 @@ type ImagePrimitive struct {
 
 func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 	point, _ := object.Geometry.AsPoint()
-	resultHref := strings.Replace(img.Href, "${ID}", strconv.Itoa(object.ID), 1)
+	mapObjectToPrimirive(&img, object)
 
-	img.Rotate = object.AzimuthalGrid.Azimut
-	img.Scale = object.View.Scale
-	tmpH := float64(img.Height)
-	tmpW := float64(img.Width)
-	img.Width, img.Height = int64(math.Floor(tmpW*img.Scale)), int64(math.Floor(tmpH*img.Scale))
-
-	if result, err := utils.GetImgByURL(resultHref); err == nil {
+	if result, err := utils.GetImgByURL(img.Href); err == nil {
 		img.bytes = result
 		inlineBase64Img := base64.StdEncoding.EncodeToString(img.bytes)
 		svg.TranslateRotate(
@@ -58,16 +40,14 @@ func (img ImagePrimitive) Render(svg *svg.SVG, object *entities.MapObject) {
 		}
 
 		svg.Gid(fmt.Sprintf("id%v", strconv.Itoa(object.ID)))
-
-		shiftX := getHorizontalShift(img, object.MarkerPosition)
-		shiftY := getVerticalShift(img, object.MarkerPosition)
-
+		shiftX := getHorizontalShift(&img, object.MarkerPosition)
+		shiftY := getVerticalShift(&img, object.MarkerPosition)
 		svg.Image(int(shiftX), int(shiftY), int(img.Width), int(img.Height), "data:"+img.Format+";base64,"+inlineBase64Img)
 		svg.Gend()
+
 		svg.Gend()
-		svg.Circle(int(point.Coordinates.X), int(point.Coordinates.Y), int(6), "fill:red;stroke:red")
 	} else {
-		fmt.Printf("Can't render %s because of err: '%s'", resultHref, err.Error())
+		fmt.Printf("Can't render %s because of err: '%s'", img.Href, err.Error())
 	}
 }
 
@@ -91,13 +71,13 @@ func NewImagePrimitive(params *map[string]interface{}) (ImagePrimitive, error) {
 	return img, nil
 }
 
-func getHorizontalShift(img ImagePrimitive, position string) (shift int64) {
-	switch strings.ToUpper(position) {
-	case leftDown, left, leftTop:
+func getHorizontalShift(img *ImagePrimitive, position int) (shift int64) {
+	switch position {
+	case entities.LeftDown, entities.Left, entities.LeftUp:
 		shift = -img.Width
-	case rightDown, right, rightTop:
+	case entities.RightDown, entities.Right, entities.RightUp:
 		shift = 0
-	case down, top:
+	case entities.Down, entities.Up:
 		shift = -img.Width / 2
 	default:
 		shift = -img.Width / 2
@@ -106,19 +86,28 @@ func getHorizontalShift(img ImagePrimitive, position string) (shift int64) {
 	return shift
 }
 
-func getVerticalShift(img ImagePrimitive, position string) (shift int64) {
-	switch strings.ToUpper(position) {
-	case leftTop, top, rightTop:
+func getVerticalShift(img *ImagePrimitive, position int) (shift int64) {
+	switch position {
+	case entities.LeftUp, entities.Up, entities.RightUp:
 		shift = -img.Height
-	case leftDown, down, rightDown:
+	case entities.LeftDown, entities.Down, entities.RightDown:
 		shift = 0
-	case left, right:
+	case entities.Left, entities.Right:
 		shift = -img.Height / 2
 	default:
 		shift = -img.Height / 2
 	}
 
 	return shift
+}
+
+func mapObjectToPrimirive(img *ImagePrimitive, object *entities.MapObject) {
+	img.Href = strings.Replace(img.Href, "${ID}", strconv.Itoa(object.ID), 1)
+	img.Rotate = object.AzimuthalGrid.Azimut
+	img.Scale = object.View.Scale
+	tmpH := float64(img.Height)
+	tmpW := float64(img.Width)
+	img.Width, img.Height = int64(math.Floor(tmpW*img.Scale)), int64(math.Floor(tmpH*img.Scale))
 }
 
 func floatToString(inputNum float64) string {

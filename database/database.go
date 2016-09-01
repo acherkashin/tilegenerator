@@ -26,7 +26,7 @@ func (gdb *GeometryDB) rowsToMapObjects(rows *sql.Rows) ([]entities.MapObject, e
 	defer tmpRows.Close()
 
 	for tmpRows.Next() {
-		var ID, typeID int
+		var ID, typeID, markerPosition int
 		var wkt, label, textPosition, colorOuter, colorInner, code string
 		var isShortwaveAntenna, needShowAzimuthalGrid, needShowDirectionalDiagram, needMirrorReflection, useCurveBezier bool
 		var sidelobes, beamWidth, azimut, distance, scale float64
@@ -34,7 +34,7 @@ func (gdb *GeometryDB) rowsToMapObjects(rows *sql.Rows) ([]entities.MapObject, e
 		err := tmpRows.Scan(&ID, &typeID, &wkt, &label, &isShortwaveAntenna,
 			&needShowAzimuthalGrid, &beamWidth, &sidelobes, &azimut, &distance,
 			&needShowDirectionalDiagram, &textPosition, &colorOuter, &colorInner,
-			&code, &scale, &needMirrorReflection, &useCurveBezier)
+			&code, &scale, &needMirrorReflection, &useCurveBezier, &markerPosition)
 
 		counter++
 
@@ -44,7 +44,7 @@ func (gdb *GeometryDB) rowsToMapObjects(rows *sql.Rows) ([]entities.MapObject, e
 			azimuthalGrid := entities.NewAzimuthalGrid(beamWidth, sidelobes, azimut,
 				isShortwaveAntenna, needShowAzimuthalGrid, needShowDirectionalDiagram)
 
-			mapObj, mapObjErr := entities.NewObject(ID, typeID, wkt, code, *azimuthalGrid, *view)
+			mapObj, mapObjErr := entities.NewObject(ID, typeID, markerPosition, wkt, code, *azimuthalGrid, *view)
 			if mapObjErr == nil {
 				mapObj.Label = label
 				mapObj.Position = textPosition
@@ -89,7 +89,7 @@ func (gdb *GeometryDB) GetGeometriesForTile(tile *tiles.Tile, situationsIds stri
 		coalesce(need_show_azimuthal_grid, false),  coalesce(beam_width, '1'), coalesce(sidelobes, '1'), coalesce(azimut, '0'),
 		coalesce(distance, '0'), coalesce(need_show_directional_diagram, 'false'), coalesce(text_position, 'bottom'),
 		coalesce(color_outer, ''), coalesce(color_inner, ''), coalesce(code, ''), scale, coalesce(need_mirror_reflection, 'false'),
-		coalesce(use_curve_bezier, 'false')  from %s
+		coalesce(use_curve_bezier, 'false'), marker_position  from %s
 		WHERE type_id NOT in (170, 11) and 
 		(min_zoom <= %v or min_zoom is null) and
 		(max_zoom >= %v or max_zoom is null) and %v
@@ -118,7 +118,7 @@ func (gdb *GeometryDB) GetAllSpecialObject(tile *tiles.Tile, situationsIds strin
 		coalesce(need_show_azimuthal_grid, false) , coalesce(beam_width, '0'), coalesce(sidelobes, '1'),	coalesce(azimut, '1'),
 		coalesce(distance, '0'), coalesce(need_show_directional_diagram, 'false'), coalesce(text_position, 'bottom'),
 		coalesce(color_outer, ''), coalesce(color_inner, ''), coalesce(code, ''), scale, coalesce(need_mirror_reflection, 'false'),
-		coalesce(use_curve_bezier, 'false')  from %s 
+		coalesce(use_curve_bezier, 'false'), marker_position  from %s 
 		WHERE (type_id BETWEEN 149 AND 165) OR (type_id IN (47,74,408,407,366,432)) and
 		(min_zoom <= %v or min_zoom is null) and
 		(max_zoom >= %v or max_zoom is null) and %v
